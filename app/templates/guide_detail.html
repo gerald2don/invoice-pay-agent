@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ loc.name }} — Shelf Guide{% endblock %}
+{% block body %}
+<p><a href="/guide">← back to Shelf Guide</a></p>
+<h1>{{ loc.name }}</h1>
+<p class="where">{{ loc.where }}</p>
+<img class="map" src="/map/{{ loc.zone }}.png" alt="Store map with the location dotted">
+{% if has_photo %}
+<img class="map" src="/static/photos/{{ loc.slug }}.jpg" alt="Shelf photo with the item circled">
+{% else %}
+<p class="sub">Shelf photo (item circled in yellow) ships with the full demo asset set; the map dot above is the verified location.</p>
+{% endif %}
+<p class="sub">Verified {{ loc.verified }} — live finder test, cross-checked against the store's shelf photos and walk-through video.</p>
+{% endblock %}

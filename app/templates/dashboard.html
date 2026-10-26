@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Inventory intelligence</h1>
+<p class="sub">Sales velocity read against on-hand counts (demo data). Three working lists, one loop: spot it → promote it → make it findable.</p>
+<div class="cols">
+  <section>
+    <h2>🔥 Trending + deep stock — push now</h2>
+    <ul>{% for i in t.push_now %}<li><strong>{{ i.name }}</strong> — {{ i.note }}</li>{% endfor %}</ul>
+  </section>
+  <section>
+    <h2>⚠️ Trending + nearly out — reorder</h2>
+    <ul>{% for i in t.reorder_flags %}<li><strong>{{ i.name }}</strong> — {{ i.note }}</li>{% endfor %}</ul>
+  </section>
+  <section>
+    <h2>💤 Dead-stock money list</h2>
+    <ul>{% for i in t.dead_stock %}<li><strong>{{ i.name }}</strong> — {{ i.note }}</li>{% endfor %}</ul>
+  </section>
+</div>
+<h2>Marketing queue</h2>
+<p class="sub">Drafts built by the research-first ad workflow. Nothing posts without a human yes.</p>
+<table>
+  <tr><th>Draft</th><th>For</th><th>Status</th></tr>
+  {% for m in t.marketing_queue %}
+  <tr><td>{{ m.title }}</td><td>{{ m.target }}</td><td><span class="chip mid">{{ m.status }}</span></td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

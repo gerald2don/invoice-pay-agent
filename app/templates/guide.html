@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Shelf Guide — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Shelf Guide</h1>
+<p class="sub">Staff product finder for the pilot store. Every location below was verified against the physical shelves in a live test (Oct 26, 2026).</p>
+<form method="get" action="/guide" class="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name a product — try &quot;Natty&quot; or &quot;Prosecco&quot;" autofocus>
+  <button type="submit">Find it</button>
+</form>
+<div class="grid">
+  {% for loc in results %}
+  <a class="card" href="/guide/{{ loc.slug }}">
+    <strong>{{ loc.name }}</strong>
+    <span>{{ loc.where_short }}</span>
+  </a>
+  {% else %}
+  <p>No match in the verified location library yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

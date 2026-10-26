@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Invoice Pay Agent{% endblock %}</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">💸 Invoice Pay Agent</div>
+  <nav>
+    <a href="/">Manager · Invoices</a>
+    <a href="/guide">Shelf Guide</a>
+    <a href="/dashboard">Dashboard</a>
+  </nav>
+</header>
+<main>
+{% block body %}{% endblock %}
+</main>
+<footer>Supplier Pay Agent for mom-and-pop retail · PayPal AI Hackathon demo · sandbox only — no real money moves</footer>
+</body>
+</html>

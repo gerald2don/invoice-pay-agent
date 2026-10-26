@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Invoice inbox — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Invoice inbox</h1>
+<p class="sub">Supplier invoices extracted by AI and matched to the item master. Review a bill, approve it, and the agent pays through PayPal.</p>
+<table>
+  <tr><th>Invoice</th><th>Supplier</th><th>Date</th><th>Lines</th><th>Total</th><th>Status</th><th></th></tr>
+  {% for row in rows %}
+  <tr>
+    <td>{{ row.inv.number }}</td>
+    <td>{{ row.supplier.name }}</td>
+    <td>{{ row.inv.date }}</td>
+    <td>{{ row.inv.lines|length }}</td>
+    <td>${{ "%.2f"|format(row.total) }}</td>
+    <td>
+      {% if row.payment %}<span class="chip ok">paid · {{ row.payment.reference }}</span>
+      {% else %}<span class="chip wait">awaiting approval</span>{% endif %}
+    </td>
+    <td><a class="btn" href="/bill/{{ row.inv.id }}">Review</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

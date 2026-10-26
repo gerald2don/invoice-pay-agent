@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Bill {{ inv.number }} — Invoice Pay Agent{% endblock %}
+{% block body %}
+<p><a href="/">← back to inbox</a></p>
+<h1>Invoice {{ inv.number }} — {{ supplier.name }}</h1>
+<p class="sub">{{ inv.date }} · extracted from the supplier invoice by AI vision, matched against the item master. Low-confidence lines are flagged for a human look before paying.</p>
+
+{% if payment %}
+<div class="banner ok">
+  ✅ Paid through {{ payment.provider }} — reference <strong>{{ payment.reference }}</strong> · ${{ "%.2f"|format(payment.amount) }} to {{ payment.payee }}.
+</div>
+{% endif %}
+
+<table>
+  <tr><th>Invoice line (as printed)</th><th>Matched item</th><th>Qty</th><th>Unit cost</th><th>Ext.</th><th>Match</th></tr>
+  {% for row in lines %}
+  <tr>
+    <td>{{ row.line.raw_text }}</td>
+    <td>{{ row.item_name }}</td>
+    <td>{{ row.line.qty }}</td>
+    <td>${{ "%.2f"|format(row.line.unit_cost) }}</td>
+    <td>${{ "%.2f"|format(row.line.qty * row.line.unit_cost) }}</td>
+    <td>
+      {% if row.line.confidence >= 0.9 %}<span class="chip ok">{{ "%.0f%%"|format(row.line.confidence * 100) }}</span>
+      {% elif row.line.confidence >= 0.7 %}<span class="chip mid">{{ "%.0f%%"|format(row.line.confidence * 100) }}</span>
+      {% else %}<span class="chip low">{{ "%.0f%%"|format(row.line.confidence * 100) }} — check me</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  <tr class="total"><td colspan="4">Bill total</td><td>${{ "%.2f"|format(total) }}</td><td></td></tr>
+</table>
+
+{% if not payment %}
+<form method="post" action="/bill/{{ inv.id }}/pay">
+  <button class="pay" type="submit">Approve &amp; Pay ${{ "%.2f"|format(total) }} via PayPal</button>
+  {% if not paypal_configured %}<p class="sub">PayPal sandbox credentials not configured — this run will record a <strong>simulated</strong> payment so the flow can be reviewed.</p>{% endif %}
+</form>
+{% endif %}
+{% endblock %}
