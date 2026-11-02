@@ -20,8 +20,39 @@ INVOICES = _load("invoices.json")
 GUIDE_LOCATIONS = _load("guide_locations.json")
 TRENDING = _load("trending.json")
 
+# Variance & claims layer: system stock, physical counts, the evidence
+# records a diagnosis walks, and vendor credit claims (seeded history plus
+# claims created this session — same append-in-memory pattern as INVOICES).
+INVENTORY = _load("inventory.json")
+COUNTS = _load("counts.json")
+EVIDENCE = _load("evidence.json")
+CLAIMS = _load("claims.json")
+
 # Runtime state (skeleton): payments made this session, keyed by invoice id.
 PAYMENTS = {}
+
+# Runtime state: variance resolutions recorded this session, keyed by count id.
+RESOLUTIONS = {}
+
+
+def inventory_for(sku, store):
+    for row in INVENTORY:
+        if row["sku"] == sku and row["store"] == store:
+            return row
+    return None
+
+
+def count_by_id(count_id):
+    for c in COUNTS:
+        if c["id"] == count_id:
+            return c
+    return None
+
+
+def today():
+    """The demo's 'today': the latest dated store activity on file."""
+    dates = [c["date"] for c in COUNTS] + [i["date"] for i in INVOICES if i.get("date")]
+    return max(dates) if dates else "2026-10-29"
 
 
 def invoice_by_id(invoice_id):

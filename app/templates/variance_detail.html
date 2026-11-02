@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Variance — {{ var.item.name }} — Invoice Pay Agent{% endblock %}
+{% block body %}
+<p><a href="/variance">← back to variance alerts</a></p>
+<h1>{{ var.item.name }} — {{ var.store }}</h1>
+<p class="sub">System says {{ var.system_qty }} · counted {{ var.counted_qty }} on {{ var.count.date }} by {{ var.count.counter }} · variance {{ "%+d"|format(var.variance) }} units = ${{ "%.2f"|format(var.dollars) }} at cost{% if var.case_multiple %} · the variance is an exact case multiple ({{ var.case_pack }} per case) — a process signal, not random shrink{% endif %}.</p>
+
+<div class="banner warn">
+  <strong>Diagnosis: {{ var.diagnosis.label }}</strong>
+  {% for reason in var.diagnosis.reasons %}<div>{{ reason }}</div>{% endfor %}
+</div>
+
+<h2>Evidence packet — the chain, link by link</h2>
+<table>
+  <tr><th>Link</th><th>Record</th><th>Detail</th></tr>
+  {% for link in var.chain %}
+  <tr>
+    <td>{{ link.link }}</td>
+    <td>{% if link.ok %}<span class="chip ok">on file</span>{% else %}<span class="chip low">missing</span>{% endif %}</td>
+    <td>{{ link.detail }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% if var.resolution %}
+<div class="banner ok">✅ Resolved — {{ var.resolution.note }}</div>
+{% endif %}
+
+{% if var.diagnosis.cause == "transfer_ghost" and not var.resolved %}
+<form method="post" action="/variance/{{ var.id }}/confirm-found">
+  <button class="pay" type="submit">Confirm found at the other store — close this variance</button>
+  <p class="sub">Closes the matching overage count too, and records a retroactive transfer note so the trail stays honest.</p>
+</form>
+{% endif %}
+
+{% if var.diagnosis.cause == "vendor_short" and not claim %}
+<form method="post" action="/variance/{{ var.id }}/claim">
+  <button class="pay" type="submit">Approve credit claim — email the ${{ "%.2f"|format(var.dollars) }} claim to {{ supplier.name }}</button>
+  <p class="sub">The claim goes to the supplier's rep ({{ supplier.rep_email }}) and is then babysat by the watchdog until the credit actually appears on a later invoice.</p>
+</form>
+{% endif %}
+
+{% include "_chain_strip.html" %}
+
+{% if claim %}
+<h2>Credit claim {{ claim.id }} — {{ supplier.name }}</h2>
+<p><span class="chip {{ claim_status.chip }}">{{ claim_status.label }}</span></p>
+<p class="sub">Sent {{ claim.sent_date }} to {{ supplier.rep_email }} · invoice {{ claim.invoice_number }} · billed {{ claim.billed_qty }} units, received {{ claim.received_qty }} · claim amount ${{ "%.2f"|format(claim.amount) }}.</p>
+<div class="mail"><strong>Subject: {{ claim.email_subject }}</strong>
+
+{{ claim.email_body }}</div>
+{% if claim.credit %}
+<div class="banner ok">💳 Credit memo {{ claim.credit.memo }} for ${{ "%.2f"|format(claim.amount) }} appeared on invoice {{ claim.credit.invoice_number }} ({{ claim.credit.date }}). It now nets against {{ supplier.name }}'s next payable invoice — the PayPal payout will go out reduced by the credit.</div>
+{% endif %}
+{% if claim.recovery %}
+<div class="banner ok">✅ Recovered via {{ claim.recovery.provider }} — netted on payout <strong>{{ claim.recovery.payout_reference }}</strong>: invoice {{ claim.recovery.invoice_number }} total ${{ "%.2f"|format(claim.recovery.invoice_total) }} less the ${{ "%.2f"|format(claim.amount) }} credit = ${{ "%.2f"|format(claim.recovery.amount_paid) }} actually paid on {{ claim.recovery.date }}.</div>
+{% endif %}
+{% if credit_text and not claim.credit %}
+<details class="demo">
+  <summary>Demo — the vendor's next invoice, as it will arrive (credit memo on it)</summary>
+  <p class="sub">Paste this into <a href="/extract">Extract an invoice</a> and add it to the inbox; the watchdog will match the credit line to this claim.</p>
+  <div class="mail">{{ credit_text }}</div>
+</details>
+{% endif %}
+{% endif %}
+{% endblock %}

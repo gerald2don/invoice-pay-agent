@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Extract an invoice — Invoice Pay Agent{% endblock %}
+{% block body %}
+<p><a href="/">← back to inbox</a></p>
+<h1>Extract an invoice</h1>
+<p class="sub">Start from a photo of the supplier invoice — the way invoices actually land at a small store. The vision step reads the photo, the extractor parses the lines, matches them against the item master, and scores each match — dropped lines and total differences are shown, never hidden.</p>
+
+<h2>📷 Photo of the invoice</h2>
+<form method="post" action="/extract/photo" enctype="multipart/form-data">
+  <p><input type="file" name="photo" accept="image/*" required>
+  <button type="submit">Read this photo</button></p>
+</form>
+<p class="sub">Demo build: the vision step is fixture-backed (no extra keys needed) — it recognizes the sample invoice photos and reads each as its verified ground-truth text. Sample photos:
+{% for s in samples %}<a href="/sample-invoices/{{ s.filename }}">{{ s.supplier_name }} {{ s.number }} — ${{ "%.2f"|format(s.total) }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+. Download one, then upload it above. In production the same step is an OCR/vision model call.</p>
+
+{% if photo_error %}
+<div class="banner warn"><div>⚠️ {{ photo_error }}</div></div>
+{% endif %}
+
+<h2>…or paste the invoice text</h2>
+<p class="sub">The same extractor, fed with text read from an invoice (the email door's shape — an emailed invoice is an attachment through this same pipeline).</p>
+
+<form method="post" action="/extract">
+  <textarea name="invoice_text" rows="9" placeholder="SUPPLIER NAME&#10;INVOICE NO. XX-00000  DATE 10/26/2026&#10;ITEM DESCRIPTION  QTY  UNIT COST  EXT&#10;TOTAL 0.00">{{ raw_text }}</textarea>
+  <p><button type="submit">Run extraction</button></p>
+</form>
+
+{% if result %}
+<h2>Extraction result{% if result.number %} — Invoice {{ result.number }}{% endif %}</h2>
+{% if photo_match %}
+<p class="sub">📷 Read from the uploaded photo — recognized as sample invoice {{ photo_match.fixture_id }} ({{ photo_match.method }} match) and read as the verified text below.</p>
+{% endif %}
+<p class="sub">
+  {% if supplier_name %}Supplier matched: <strong>{{ supplier_name }}</strong>{% else %}Supplier not recognized from the header — a manager maps it before this can be added.{% endif %}
+  {% if result.date %} · {{ result.date }}{% endif %}
+</p>
+
+{% if result.flags %}
+<div class="banner warn">
+  {% for flag in result.flags %}<div>⚠️ {{ flag }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<table>
+  <tr><th>Invoice line (as printed)</th><th>Matched item</th><th>Qty</th><th>Unit cost</th><th>Ext.</th><th>Match</th></tr>
+  {% for row in lines %}
+  <tr>
+    <td>{{ row.line.raw_text }}{% for flag in row.line.flags %}<div class="sub">⚠️ {{ flag }}</div>{% endfor %}</td>
+    <td>{{ row.item_name }}</td>
+    <td>{{ row.line.qty }}</td>
+    <td>${{ "%.2f"|format(row.line.unit_cost) }}</td>
+    <td>${{ "%.2f"|format(row.line.qty * row.line.unit_cost) }}</td>
+    <td>
+      {% if row.line.confidence >= 0.9 %}<span class="chip ok">{{ "%.0f%%"|format(row.line.confidence * 100) }}</span>
+      {% elif row.line.confidence >= 0.7 %}<span class="chip mid">{{ "%.0f%%"|format(row.line.confidence * 100) }}</span>
+      {% else %}<span class="chip low">{{ "%.0f%%"|format(row.line.confidence * 100) }} — check me</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  <tr class="total"><td colspan="4">Bill total (extracted lines)</td><td>${{ "%.2f"|format(result.total) }}</td><td></td></tr>
+</table>
+
+{% if result.dropped_lines %}
+<p class="sub">Not entered as bill lines:
+{% for d in result.dropped_lines %}{{ d.raw_text }} — ${{ "%.2f"|format(d.amount) }} ({{ d.reason }}){% if not loop.last %}; {% endif %}{% endfor %}
+</p>
+{% endif %}
+
+{% if result.credit_lines %}
+<p class="sub">Vendor credit line(s) on this invoice:
+{% for c in result.credit_lines %}memo {{ c.memo }} — ${{ "%.2f"|format(c.amount) }} against invoice {{ c.for_invoice }}{% if not loop.last %}; {% endif %}{% endfor %}
+. The claims watchdog will match this to the open claim for that invoice.</p>
+{% endif %}
+
+{% if result.stated_total is not none %}
+<p class="sub">Printed invoice total: ${{ "%.2f"|format(result.stated_total) }}.
+{% if result.totals_check.explained_by_dropped %}The ${{ "%.2f"|format(result.totals_check.difference) }} difference is exactly the dropped line(s) above.
+{% elif result.totals_check.explained_by_credit %}The ${{ "%.2f"|format(result.totals_check.difference|abs) }} difference is exactly the vendor credit line above — the printed total is the bill minus the credit.
+{% elif result.totals_check.matches %}It matches the extracted lines.
+{% else %}It differs from the extracted lines by ${{ "%.2f"|format(result.totals_check.difference) }} — verify before paying.{% endif %}
+</p>
+{% endif %}
+
+{% if supplier_name and result.lines %}
+<form method="post" action="/extract/add">
+  <input type="hidden" name="invoice_text" value="{{ raw_text }}">
+  <button class="pay" type="submit">Add to inbox for review &amp; payment</button>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

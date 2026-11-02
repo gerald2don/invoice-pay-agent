@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Vendor claims — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Vendor credit claims</h1>
+<p class="sub">Every claim is babysat until the money actually comes back: the watchdog matches credit memos on incoming invoices, applied credits net against the supplier's next PayPal payout, and anything past 14 days without a credit is flagged overdue with a follow-up sent.</p>
+<table>
+  <tr><th>Claim</th><th>Supplier</th><th>Invoice</th><th>Item</th><th>Amount</th><th>Sent</th><th>Status</th><th></th></tr>
+  {% for row in rows %}
+  <tr>
+    <td>{{ row.claim.id }}</td>
+    <td>{{ row.supplier.name }}</td>
+    <td>{{ row.claim.invoice_number }}</td>
+    <td>{{ row.claim.item_name }}</td>
+    <td>${{ "%.2f"|format(row.claim.amount) }}</td>
+    <td>{{ row.claim.sent_date }}</td>
+    <td><span class="chip {{ row.status.chip }}">{{ row.status.label }}</span></td>
+    <td>{% if row.claim.variance_id %}<a class="btn" href="/variance/{{ row.claim.variance_id }}">Packet</a>{% endif %}</td>
+  </tr>
+  {% if row.claim.recovery %}
+  <tr><td colspan="8" class="sub">Recovered via {{ row.claim.recovery.provider }} — netted on payout <strong>{{ row.claim.recovery.payout_reference }}</strong> (invoice {{ row.claim.recovery.invoice_number }}: ${{ "%.2f"|format(row.claim.recovery.invoice_total) }} − ${{ "%.2f"|format(row.claim.amount) }} credit = ${{ "%.2f"|format(row.claim.recovery.amount_paid) }} paid).</td></tr>
+  {% endif %}
+  {% if row.credit_text %}
+  <tr><td colspan="8">
+    <details class="demo">
+      <summary>Demo — the vendor's next invoice, as it will arrive (credit memo on it)</summary>
+      <p class="sub">Paste this into <a href="/extract">Extract an invoice</a> and add it to the inbox; the watchdog will match the credit line to this claim.</p>
+      <div class="mail">{{ row.credit_text }}</div>
+    </details>
+  </td></tr>
+  {% endif %}
+  {% if row.next_text %}
+  <tr><td colspan="8">
+    <details class="demo">
+      <summary>Demo — the vendor's next payable invoice (the credit nets against this one)</summary>
+      <p class="sub">Paste this into <a href="/extract">Extract an invoice</a>, add it to the inbox, then approve &amp; pay it — the payout goes out reduced by the ${{ "%.2f"|format(row.claim.amount) }} credit.</p>
+      <div class="mail">{{ row.next_text }}</div>
+    </details>
+  </td></tr>
+  {% endif %}
+  {% else %}
+  <tr><td colspan="8">No claims yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -3,6 +3,7 @@
 {% block body %}
 <h1>Invoice inbox</h1>
 <p class="sub">Supplier invoices extracted by AI and matched to the item master. Review a bill, approve it, and the agent pays through PayPal.</p>
+<p><a class="btn" href="/extract">+ New invoice from photo text</a></p>
 <table>
   <tr><th>Invoice</th><th>Supplier</th><th>Date</th><th>Lines</th><th>Total</th><th>Status</th><th></th></tr>
   {% for row in rows %}

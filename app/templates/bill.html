@@ -8,6 +8,13 @@
 {% if payment %}
 <div class="banner ok">
   ✅ Paid through {{ payment.provider }} — reference <strong>{{ payment.reference }}</strong> · ${{ "%.2f"|format(payment.amount) }} to {{ payment.payee }}.
+  {% if payment.credit_applied %}<div>Math: invoice total ${{ "%.2f"|format(payment.invoice_total) }} − vendor credit ${{ "%.2f"|format(payment.credit_applied) }} (claim {{ payment.credit_claim_id }}, memo {{ payment.credit_memo }}) = ${{ "%.2f"|format(payment.amount) }} actually paid. The credit was recovered by netting it against this payout.</div>{% endif %}
+</div>
+{% endif %}
+
+{% if inv.flags %}
+<div class="banner warn">
+  {% for flag in inv.flags %}<div>⚠️ {{ flag }}</div>{% endfor %}
 </div>
 {% endif %}
 
@@ -30,9 +37,31 @@
   <tr class="total"><td colspan="4">Bill total</td><td>${{ "%.2f"|format(total) }}</td><td></td></tr>
 </table>
 
+{% if inv.dropped_lines %}
+<p class="sub">Not entered as bill lines:
+{% for d in inv.dropped_lines %}{{ d.raw_text }} — ${{ "%.2f"|format(d.amount) }} ({{ d.reason }}){% if not loop.last %}; {% endif %}{% endfor %}
+</p>
+{% endif %}
+{% if inv.credit_lines %}
+<div class="banner ok">
+  {% for c in inv.credit_lines %}<div>💳 Vendor credit on this invoice: memo {{ c.memo }} — ${{ "%.2f"|format(c.amount) }} against invoice {{ c.for_invoice }}. The claims watchdog matches it to the open claim; it will net against this supplier's next payable invoice.</div>{% endfor %}
+</div>
+{% endif %}
+{% if inv.stated_total and inv.stated_total != total %}
+<p class="sub">Printed invoice total: ${{ "%.2f"|format(inv.stated_total) }} — the ${{ "%.2f"|format(inv.stated_total - total) }} difference is the dropped line(s) above, shown on purpose, not hidden.</p>
+{% endif %}
+
+{% include "_chain_strip.html" %}
+
 {% if not payment %}
+{% if credit_claim %}
+<div class="banner ok">
+  💳 A vendor credit is ready to net against this invoice — claim {{ credit_claim.claim.id }} (credit memo {{ credit_claim.claim.credit.memo }}):<br>
+  Invoice total ${{ "%.2f"|format(total) }} − vendor credit ${{ "%.2f"|format(credit_claim.amount) }} = <strong>${{ "%.2f"|format(credit_claim.net) }} to pay</strong>. Paying sends the reduced amount through PayPal and closes the claim as recovered.
+</div>
+{% endif %}
 <form method="post" action="/bill/{{ inv.id }}/pay">
-  <button class="pay" type="submit">Approve &amp; Pay ${{ "%.2f"|format(total) }} via PayPal</button>
+  <button class="pay" type="submit">Approve &amp; Pay ${{ "%.2f"|format(credit_claim.net if credit_claim else total) }} via PayPal</button>
   {% if not paypal_configured %}<p class="sub">PayPal sandbox credentials not configured — this run will record a <strong>simulated</strong> payment so the flow can be reviewed.</p>{% endif %}
 </form>
 {% endif %}

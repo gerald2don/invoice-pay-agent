@@ -1,0 +1,15 @@
+{% if chain_events %}
+<h2>Chain of custody — from the ledger</h2>
+<table>
+  <tr><th>#</th><th>When</th><th>Event</th><th>Hash</th></tr>
+  {% for e in chain_events %}
+  <tr>
+    <td>{{ e.seq }}</td>
+    <td>{{ e.ts[:10] }}</td>
+    <td><strong>{{ e.type }}</strong> — {{ e.summary }}</td>
+    <td><span class="hash">{{ e.hash[:10] }}…</span></td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="sub">Every step above is hash-linked to the one before it in the <a href="/ledger">event ledger</a> — edit any step and the chain breaks.</p>
+{% endif %}

@@ -17,6 +17,29 @@
     <ul>{% for i in t.dead_stock %}<li><strong>{{ i.name }}</strong> — {{ i.note }}</li>{% endfor %}</ul>
   </section>
 </div>
+<h2>💰 Owner digest — variance recovery</h2>
+<p class="sub">Counts get diagnosed, vendor shorts get claimed, and credits come back by netting against the supplier's next PayPal payout. This is the money the shoebox used to lose.</p>
+<div class="cols">
+  <section>
+    <h2>Recovered via PayPal</h2>
+    <p><strong>${{ "%.2f"|format(digest.recovered_total) }}</strong> recovered so far</p>
+    <ul>
+      {% for r in digest.recovered %}<li><strong>{{ r.claim_id }}</strong> — ${{ "%.2f"|format(r.amount) }} from {{ r.supplier }}, netted on payout {{ r.payout_reference }}</li>
+      {% else %}<li>No recoveries yet — the first claim is in flight.</li>{% endfor %}
+    </ul>
+  </section>
+  <section>
+    <h2>Open claims</h2>
+    <p><strong>{{ digest.open_claims }}</strong> claim{% if digest.open_claims != 1 %}s{% endif %} being babysat by the watchdog — see <a href="/claims">Claims</a>.</p>
+  </section>
+  <section>
+    <h2>🏆 Vendor error leaderboard</h2>
+    <ul>
+      {% for row in digest.leaderboard %}<li><strong>{{ row.supplier }}</strong> — {{ row.errors }} error{% if row.errors != 1 %}s{% endif %} · ${{ "%.2f"|format(row.amount) }} claimed</li>
+      {% else %}<li>No vendor errors on record.</li>{% endfor %}
+    </ul>
+  </section>
+</div>
 <h2>Marketing queue</h2>
 <p class="sub">Drafts built by the research-first ad workflow. Nothing posts without a human yes.</p>
 <table>

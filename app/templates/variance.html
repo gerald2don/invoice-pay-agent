@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Variance alerts — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Variance alerts</h1>
+<p class="sub">Physical counts that disagree with system stock. Each alert carries a diagnosis walked from the records — ordered → billed → received → entered → sold / transferred → counted — so a missing case gets a cause, not just an adjustment.</p>
+<table>
+  <tr><th>Item</th><th>Store</th><th>System</th><th>Counted</th><th>Variance</th><th>$ at cost</th><th>Diagnosis</th><th>Status</th><th></th></tr>
+  {% for var in rows %}
+  <tr>
+    <td>{{ var.item.name }}</td>
+    <td>{{ var.store }}</td>
+    <td>{{ var.system_qty }}</td>
+    <td>{{ var.counted_qty }}</td>
+    <td>{{ "%+d"|format(var.variance) }}{% if var.case_multiple %} <span class="chip mid">exactly {{ (var.variance|abs) // var.case_pack }} case{% if (var.variance|abs) // var.case_pack != 1 %}s{% endif %} of {{ var.case_pack }}</span>{% endif %}</td>
+    <td>${{ "%.2f"|format(var.dollars) }}</td>
+    <td>{{ var.diagnosis.label }}</td>
+    <td>
+      {% if var.resolved %}<span class="chip ok">resolved</span>
+      {% elif var.claim %}<span class="chip mid">claim {{ var.claim.id }} open</span>
+      {% else %}<span class="chip wait">open</span>{% endif %}
+    </td>
+    <td><a class="btn" href="/variance/{{ var.id }}">Evidence packet</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="9">No variances — every count agrees with system stock.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

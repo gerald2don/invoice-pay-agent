@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Ledger — chain of custody — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Event ledger — a chain of custody for every dollar</h1>
+<p class="sub">Every invoice, count, diagnosis, claim, credit, and PayPal payout in this app is written to one append-only log. Each event carries the SHA-256 hash of the event before it, and its own hash is computed over that link plus its contents — so any alteration, deletion, or reordering breaks the chain at a specific, visible point. This is not a public blockchain and claims no network or token: it is the same tamper-evidence idea kept as one honest local log, in a format that is chain-ready if the history ever needs to anchor to one.</p>
+
+{% if verify %}
+{% if verify.ok %}
+<div class="banner ok">🔗 Chain verified — {{ verify.count }} events, no gaps, no alterations. Every hash recomputes and every link points at the event before it.</div>
+{% else %}
+<div class="banner warn">⛓️‍💥 Chain broken at event #{{ verify.bad }} — its stored hash or its link to the previous event does not recompute. Everything from that point on is suspect.</div>
+{% endif %}
+{% else %}
+<p><a class="btn" href="/ledger?verify=1">Verify chain</a> <span class="sub">recomputes every hash in the log and checks each link.</span></p>
+{% endif %}
+
+<table>
+  <tr><th>#</th><th>When</th><th>Event</th><th>What happened</th><th>Hash ← previous</th></tr>
+  {% for e in events %}
+  <tr>
+    <td>{{ e.seq }}</td>
+    <td>{{ e.ts.replace("T", " ")[:16] }}</td>
+    <td><span class="chip mid">{{ e.type }}</span></td>
+    <td><strong>{{ e.summary }}</strong><div class="sub">{{ e.actor }}{% for k, v in e.payload.items() if k != "seeded" %} · {{ k }}: {{ v }}{% endfor %}</div></td>
+    <td><span class="hash">{{ e.hash[:10] }}…<br>← {{ e.prev_hash[:10] }}…</span></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

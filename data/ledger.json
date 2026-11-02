@@ -1,0 +1,137 @@
+[
+ {
+  "seq": 0,
+  "ts": "2026-10-01T09:00:00+00:00",
+  "type": "GENESIS",
+  "actor": "system",
+  "summary": "Ledger opened — the chain of custody for every dollar begins here. Each event below is hash-linked to the one before it.",
+  "payload": {
+   "seeded": true
+  },
+  "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "hash": "cac1ea2c9533f16153ff5e52410a3c67d08db0f9256b35055d13b1039bec4096"
+ },
+ {
+  "seq": 1,
+  "ts": "2026-10-08T09:00:00+00:00",
+  "type": "CLAIM_SENT",
+  "actor": "Store manager",
+  "summary": "Claim CLM-1001 sent to Heartland Grocery Wholesale — $81.60 for Paper Towels 6pk billed on invoice HG-31077 that never arrived.",
+  "payload": {
+   "seeded": true,
+   "claim_id": "CLM-1001",
+   "supplier_id": "sup-heartland",
+   "supplier": "Heartland Grocery Wholesale",
+   "invoice_number": "HG-31077",
+   "amount": 81.6
+  },
+  "prev_hash": "cac1ea2c9533f16153ff5e52410a3c67d08db0f9256b35055d13b1039bec4096",
+  "hash": "7c0314873e0140622d23d03c81be066c846fdca2dfcf956591f6196c8017816a"
+ },
+ {
+  "seq": 2,
+  "ts": "2026-10-22T08:30:00+00:00",
+  "type": "INVOICE_RECEIVED",
+  "actor": "Invoice Pay Agent",
+  "summary": "Invoice PS-88510 from Prairie State Beverage Co. received and extracted (paste/extract door) — total $256.68.",
+  "payload": {
+   "seeded": true,
+   "invoice_id": "inv-2050",
+   "invoice_number": "PS-88510",
+   "supplier_id": "sup-prairie",
+   "supplier": "Prairie State Beverage Co.",
+   "total": 256.68,
+   "source": "extract"
+  },
+  "prev_hash": "7c0314873e0140622d23d03c81be066c846fdca2dfcf956591f6196c8017816a",
+  "hash": "f14b760ea0159e7fbcedb6aa96d7dcbb235f2c51d71b7277477dc74baa792d7a"
+ },
+ {
+  "seq": 3,
+  "ts": "2026-10-29T10:15:00+00:00",
+  "type": "COUNT_RECORDED",
+  "actor": "Dana W.",
+  "summary": "Count recorded at Store A — Cold Brew Concentrate 32oz (CB-1301): system says 14, shelf holds 2.",
+  "payload": {
+   "seeded": true,
+   "variance_id": "cnt-101",
+   "sku": "CB-1301",
+   "store": "Store A",
+   "system_qty": 14,
+   "counted_qty": 2,
+   "variance": -12
+  },
+  "prev_hash": "f14b760ea0159e7fbcedb6aa96d7dcbb235f2c51d71b7277477dc74baa792d7a",
+  "hash": "785e6cfb2dfef1d79f9aa544401db0a4137ec8eea4115e4fa91fd722164d15c4"
+ },
+ {
+  "seq": 4,
+  "ts": "2026-10-29T10:20:00+00:00",
+  "type": "VARIANCE_DIAGNOSED",
+  "actor": "Invoice Pay Agent",
+  "summary": "Variance on Cold Brew Concentrate 32oz (Store A) diagnosed: vendor short — one case billed on invoice PS-88510, no receiving record. $186.00 at cost.",
+  "payload": {
+   "seeded": true,
+   "variance_id": "cnt-101",
+   "sku": "CB-1301",
+   "cause": "vendor_short",
+   "invoice_number": "PS-88510",
+   "amount": 186.0
+  },
+  "prev_hash": "785e6cfb2dfef1d79f9aa544401db0a4137ec8eea4115e4fa91fd722164d15c4",
+  "hash": "7ba8e368d3c070cad9045337398c5bbb2930b78208e8f6448ef4303701f744d5"
+ },
+ {
+  "seq": 5,
+  "ts": "2026-10-29T16:39:02+00:00",
+  "type": "INVOICE_RECEIVED",
+  "actor": "Invoice Pay Agent",
+  "summary": "Invoice HG-31244 from Heartland Grocery Wholesale received via the paste/extract door — total $119.70.",
+  "payload": {
+   "invoice_id": "inv-2053",
+   "invoice_number": "HG-31244",
+   "supplier_id": "sup-heartland",
+   "supplier": "Heartland Grocery Wholesale",
+   "total": 119.7,
+   "source": "extract"
+  },
+  "prev_hash": "7ba8e368d3c070cad9045337398c5bbb2930b78208e8f6448ef4303701f744d5",
+  "hash": "37fa80772e19131170d1ce8f0de2b1555f31f1e2c6eef7273b048125f3077c3a"
+ },
+ {
+  "seq": 6,
+  "ts": "2026-10-29T16:39:04+00:00",
+  "type": "PAYMENT_SENT",
+  "actor": "Store manager",
+  "summary": "Payment sent via PayPal sandbox — $119.70 to Heartland Grocery Wholesale for invoice HG-31244 (batch CGWXSJH99LGUE)",
+  "payload": {
+   "invoice_id": "inv-2053",
+   "invoice_number": "HG-31244",
+   "supplier_id": "sup-heartland",
+   "supplier": "Heartland Grocery Wholesale",
+   "amount": 119.7,
+   "reference": "CGWXSJH99LGUE",
+   "provider": "PayPal sandbox"
+  },
+  "prev_hash": "37fa80772e19131170d1ce8f0de2b1555f31f1e2c6eef7273b048125f3077c3a",
+  "hash": "9d10d7275a2c91c06d43c53d06204bc9ea0d5fefab6ac0a6d1e106fb8d336da0"
+ },
+ {
+  "seq": 7,
+  "ts": "2026-10-29T16:39:05+00:00",
+  "type": "PAYMENT_SENT",
+  "actor": "Store manager",
+  "summary": "Payment sent via PayPal sandbox — $111.00 to Heartland Grocery Wholesale for invoice HG-31205 (batch GN5LYF4KNWAJS)",
+  "payload": {
+   "invoice_id": "inv-2052",
+   "invoice_number": "HG-31205",
+   "supplier_id": "sup-heartland",
+   "supplier": "Heartland Grocery Wholesale",
+   "amount": 111.0,
+   "reference": "GN5LYF4KNWAJS",
+   "provider": "PayPal sandbox"
+  },
+  "prev_hash": "9d10d7275a2c91c06d43c53d06204bc9ea0d5fefab6ac0a6d1e106fb8d336da0",
+  "hash": "54e012429a8a7b934b51e0ed54c1bc053078fd4c8ea64b5002a9d8cec43a89ac"
+ }
+]
