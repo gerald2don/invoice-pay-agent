@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Ad Boosting — Invoice Pay Agent{% endblock %}
 {% block body %}
-<h1>Ad Boosting — pay to repeat what already worked</h1>
-<p class="sub"><strong>What boosting is:</strong> paying the ad platform to show one of the store's posts to more people. <strong>This store's rule:</strong> only a post pattern the store's <em>own results</em> have already proven can be boosted — the numbers below are from the store's own past posts, and they decide what's eligible. An unproven post can't be boosted at any price, so ad money never follows a hunch. The manager picks a proven pattern, sets the budget and the days, approves — and <strong>PayPal pays the ad platform</strong>, on the same connection that pays the suppliers. The spend lands in the same ledger as every other dollar.</p>
+<h1>Ad Boosting — every post can be boosted; the numbers help you choose</h1>
+<p class="sub"><strong>What boosting is:</strong> paying the ad platform to show one of the store's posts to more people. <strong>Every post can be boosted.</strong> The app rates each one and estimates what a boost would likely do — the manager makes the call. Pick any post below, set the budget and the days, approve — and <strong>PayPal pays the ad platform</strong>, on the same connection that pays the suppliers. Boosts are managed right here: start one, watch it, end it. Every spend lands in the same ledger as every other dollar.</p>
 
-<h2>The store's own results — what has proven itself</h2>
+<h2>The store's own results — ratings and boost estimates</h2>
 <table>
-  <tr><th>Post</th><th>Pattern</th><th>Posted</th><th>Reach</th><th>Engagement</th><th>Store visits</th><th>Boost?</th></tr>
+  <tr><th>Post</th><th>Pattern</th><th>Posted</th><th>Reach</th><th>Engagement</th><th>Store visits</th><th>Rating</th><th>Estimate if boosted (${{ ref_budget }} / {{ ref_days }} days)</th></tr>
   {% for pat in patterns %}
   <tr>
     <td><strong>{{ pat.title }}</strong><div class="sub">{{ pat.product }}</div></td>
@@ -15,20 +15,22 @@
     <td>{{ "{:,}".format(pat.reach) }}</td>
     <td>{{ "{:,}".format(pat.engagement) }}</td>
     <td>{{ pat.store_visits }}</td>
+    <td><span class="chip {% if pat.rating == 'Strong' %}ok{% elif pat.rating == 'Decent' %}mid{% else %}low{% endif %}">{{ pat.rating }}</span></td>
     <td>
-      {% if pat.proven %}<span class="chip ok">eligible — proven</span>
-      {% else %}<span class="chip low">not eligible — hasn't proven itself</span>{% endif %}
+      +{{ "{:,}".format(pat.est_reach_low) }} to +{{ "{:,}".format(pat.est_reach_high) }} reach
+      <div class="sub">≈ {{ pat.est_visits_low }}–{{ pat.est_visits_high }} store visits{% if pat.est_rough %} · little organic signal yet — estimate is rough{% endif %}</div>
     </td>
   </tr>
-  <tr><td colspan="7" class="sub">{{ pat.verdict }}</td></tr>
+  <tr><td colspan="8" class="sub">{{ pat.verdict }}</td></tr>
   {% endfor %}
 </table>
+<p class="sub"><strong>How the rating works:</strong> reach counts how many people the post already found, engagement rate how they reacted, and store visits per 1,000 reach how many walked in. <strong>Strong</strong> = 10,000+ reach with strong reaction and visits; <strong>Decent</strong> = 5,000+ reach with solid numbers; <strong>Light</strong> = it ran, but the response was thin; <strong>Too new to tell</strong> = under 1,000 reach so far. <strong>How the estimate works:</strong> estimated extra reach is a multiple of the post's own organic reach, wider for stronger ratings because the platform steers paid reach toward likely responders — scaled by budget and run length. Estimate from this post's organic reach and engagement — a guide, not a promise.</p>
 
-<h2>Boost a proven pattern</h2>
-{% for pat in patterns if pat.proven %}
+<h2>Boost a post</h2>
+{% for pat in patterns %}
 <section class="card" style="margin: 14px 0;">
-  <h2 style="margin: 4px 0;">{{ pat.title }}</h2>
-  <p class="sub" style="margin: 4px 0;">{{ pat.pattern }} — last run: {{ "{:,}".format(pat.reach) }} reach, {{ pat.store_visits }} store visits.</p>
+  <h2 style="margin: 4px 0;">{{ pat.title }} <span class="chip {% if pat.rating == 'Strong' %}ok{% elif pat.rating == 'Decent' %}mid{% else %}low{% endif %}">rated {{ pat.rating }}</span></h2>
+  <p class="sub" style="margin: 4px 0;">{{ pat.pattern }} — organically: {{ "{:,}".format(pat.reach) }} reach, {{ pat.store_visits }} store visits. Estimated at ${{ ref_budget }} over {{ ref_days }} days: +{{ "{:,}".format(pat.est_reach_low) }} to +{{ "{:,}".format(pat.est_reach_high) }} reach{% if pat.est_rough %} (rough — little organic signal yet){% endif %}.</p>
   <form method="post" action="/boost/{{ pat.id }}/pay">
     <p style="margin: 8px 0;">
       <strong>Budget:</strong>
@@ -47,12 +49,11 @@
   </form>
 </section>
 {% endfor %}
-<p class="sub">The Tuesday price-drop graphic is not in this list — it hasn't proven itself, so it can't be boosted. That's the rule working, not a missing button.</p>
 
-<h2>Boosts on the books</h2>
+<h2>Your boosts</h2>
 {% if boosts %}
 <table>
-  <tr><th>Boost</th><th>Pattern boosted</th><th>Budget</th><th>Days</th><th>Started</th><th>Status</th><th>Payout reference</th></tr>
+  <tr><th>Boost</th><th>Post boosted</th><th>Budget</th><th>Days</th><th>Started</th><th>Status</th><th>Sold on this estimate</th><th>Payout reference</th><th></th></tr>
   {% for b in boosts %}
   <tr>
     <td>{{ b.id }}</td>
@@ -60,13 +61,24 @@
     <td>${{ "%.2f"|format(b.budget) }}</td>
     <td>{{ b.days }}</td>
     <td>{{ b.started }}</td>
-    <td><span class="chip ok">{{ b.status }}</span></td>
+    <td>{% if b.status == 'active' %}<span class="chip ok">ACTIVE</span>{% else %}<span class="chip low">ENDED</span>{% endif %}</td>
+    <td>
+      {% if b.estimate %}+{{ "{:,}".format(b.estimate.reach_low) }} to +{{ "{:,}".format(b.estimate.reach_high) }} reach<div class="sub">rated {{ b.rating }}{% if b.estimate.rough %} · rough estimate{% endif %}</div>
+      {% else %}<span class="sub">—</span>{% endif %}
+    </td>
     <td>{{ b.payment.reference }} · {{ b.payment.provider }}</td>
+    <td>
+      {% if b.status == 'active' %}
+      <form method="post" action="/boost/{{ b.id }}/end" style="margin: 0;">
+        <button type="submit">End boost</button>
+      </form>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
 </table>
-<p class="sub">Every boost is also written to the <a href="/ledger">event ledger</a> — the same hash-linked chain of custody as the supplier payments.</p>
+<p class="sub">Every boost — started or ended — is also written to the <a href="/ledger">event ledger</a>: the same hash-linked chain of custody as the supplier payments. Ended boosts stay listed here as history; ending one stops the run, it doesn't erase the record.</p>
 {% else %}
-<p class="sub">No boosts yet. When the manager approves one, it appears here and in the <a href="/ledger">event ledger</a>.</p>
+<p class="sub">No boosts yet. When the manager approves one above, it appears here and in the <a href="/ledger">event ledger</a>.</p>
 {% endif %}
 {% endblock %}

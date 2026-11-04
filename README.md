@@ -28,13 +28,17 @@ one token, one Payouts API, one approval doctrine, one ledger — also runs
 the store's other two money-out jobs:
 
 - **Ad Boosting (`/boost`).** Boosting means paying an ad platform to show
-  a post to more people. The store's rule: only a pattern its **own post
-  results have already proven** can be boosted — the in-app tracker lists
-  each past post's reach, engagement, and store visits, and marks the ones
-  that haven't proven themselves **not eligible** (the server enforces it,
-  not just the label). The manager picks a proven pattern, sets a budget
-  and a number of days, approves, and PayPal pays the ad platform. The
-  boost, its budget, and its payout reference land in the same ledger.
+  a post to more people. **Every post can be boosted** — there is no
+  eligibility gate. What the app adds is homework: the tracker rates each
+  past post from the store's own results (Strong / Decent / Light / Too
+  new to tell, from reach, engagement, and store visits) and shows an
+  **estimate** of what a boost would likely do — projected extra reach
+  computed from that post's organic numbers, labeled a guide, not a
+  promise, and flagged rough when the post has little signal yet. The
+  manager picks any post, sets a budget and a number of days, approves,
+  and PayPal pays the ad platform. Boosts are managed on the same screen —
+  started, listed with the estimate each was sold on, and ended there —
+  and every boost and payout reference lands in the same ledger.
 - **Quick Runs (`/quick-runs`).** The errand loop for what distributors
   don't bring — cleaning supplies, bags, cups, receipt tape. The shift
   checklist flags the need, the agent builds the itemized cart at the

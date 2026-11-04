@@ -1,1 +1,46 @@
-[{"engagement":1290,"id":"pat-201","pattern":"Portrait style × wine × Friday evening","posted":"Fri Oct 24, 5:40 PM","product":"Wine case tiers (10% / 15% / 20% off)","proven":true,"reach":18400,"store_visits":212,"title":"Wine case sale — portrait post","verdict":"Proven — the best reach and the most store visits of any post this month. This is the pattern a boost should repeat."},{"engagement":940,"id":"pat-202","pattern":"Shelf-find style × new arrivals × weekday noon","posted":"Wed Oct 29, 12:15 PM","product":"New-arrival spirits","proven":true,"reach":12100,"store_visits":156,"title":"'NEW TO A1' shelf-find post","verdict":"Proven — new arrivals in this post moved within days of it going up."},{"engagement":860,"id":"pat-203","pattern":"Cooler photo × beer × weekday after 5 PM","posted":"Tue Oct 28, 5:20 PM","product":"Domestic beer 12/24-packs","proven":true,"reach":9800,"store_visits":121,"title":"Beer after five — cooler photo","verdict":"Proven — the after-work crowd sees this one and stops in on the way home."},{"engagement":41,"id":"pat-204","pattern":"Price-drop graphic × mixed markdowns × Tuesday morning","posted":"Tue Oct 21, 9:05 AM","product":"Assorted markdowns","proven":false,"reach":1900,"store_visits":6,"title":"Tuesday price-drop graphic","verdict":"Not eligible — this one hasn't proven itself yet. Boosting is only for patterns the store's own results have already proven; ad money doesn't follow a hunch."}]
+[
+ {
+  "engagement": 1290,
+  "id": "pat-201",
+  "pattern": "Portrait style × wine × Friday evening",
+  "posted": "Fri Oct 24, 5:40 PM",
+  "product": "Wine case tiers (10% / 15% / 20% off)",
+  "reach": 18400,
+  "store_visits": 212,
+  "title": "Wine case sale — portrait post",
+  "verdict": "The best reach and the most store visits of any post this month — the store's strongest organic performer."
+ },
+ {
+  "engagement": 940,
+  "id": "pat-202",
+  "pattern": "Shelf-find style × new arrivals × weekday noon",
+  "posted": "Wed Oct 29, 12:15 PM",
+  "product": "New-arrival spirits",
+  "reach": 12100,
+  "store_visits": 156,
+  "title": "'NEW TO A1' shelf-find post",
+  "verdict": "New arrivals in this post moved within days of it going up — fresh product plus the shelf-find look does real work."
+ },
+ {
+  "engagement": 860,
+  "id": "pat-203",
+  "pattern": "Cooler photo × beer × weekday after 5 PM",
+  "posted": "Tue Oct 28, 5:20 PM",
+  "product": "Domestic beer 12/24-packs",
+  "reach": 9800,
+  "store_visits": 121,
+  "title": "Beer after five — cooler photo",
+  "verdict": "The after-work crowd sees this one and stops in on the way home — a steady, reliable performer."
+ },
+ {
+  "engagement": 41,
+  "id": "pat-204",
+  "pattern": "Price-drop graphic × mixed markdowns × Tuesday morning",
+  "posted": "Tue Oct 21, 9:05 AM",
+  "product": "Assorted markdowns",
+  "reach": 1900,
+  "store_visits": 6,
+  "title": "Tuesday price-drop graphic",
+  "verdict": "Barely got seen and barely got a response. Tuesday morning is a quiet slot and markdown graphics are easy to scroll past — thin signal so far, which the rating and estimate say out loud."
+ }
+]
