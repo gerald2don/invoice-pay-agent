@@ -95,9 +95,27 @@ def estimate_boost(pat, budget=REFERENCE_BUDGET, days=REFERENCE_DAYS):
     return reach_low, reach_high, visits_low, visits_high, rough
 
 
+# Plain-language line shown under each post, COMPUTED from its rating
+# at render time. Stored verdict text in the data file is never rendered:
+# a data disk seeded before a wording change would otherwise keep
+# serving the old words forever (the Nov 4 stale-verdict defect).
+RATING_LINES = {
+    "Strong": "Strong signal in the store's own numbers — the estimate below is the firmest on this page.",
+    "Decent": "Solid signal — a reasonable bet at the estimate below.",
+    "Light": "Thin signal so far — boostable like any post here; the estimate is rough and the manager decides.",
+    "Too new to tell": "Barely any signal yet — boostable like any post here; treat the estimate as a rough guess.",
+}
+
+
+def rating_line(rating):
+    return RATING_LINES.get(rating, RATING_LINES["Light"])
+
+
 def _pattern_view(pat):
     view = dict(pat)
+    view.pop("proven", None)
     view["rating"] = rate_pattern(pat)
+    view["verdict"] = rating_line(view["rating"])
     low, high, vlow, vhigh, rough = estimate_boost(pat)
     view["est_reach_low"] = low
     view["est_reach_high"] = high

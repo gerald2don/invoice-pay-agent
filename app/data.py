@@ -102,6 +102,10 @@ def save_boosts():
     _save("boosts.json", BOOSTS)
 
 
+def save_boost_patterns():
+    _save("boost_patterns.json", BOOST_PATTERNS)
+
+
 def save_losses():
     _save("losses.json", LOSSES)
 
@@ -165,6 +169,42 @@ def _seed_breakdown_singles():
 
 
 _seed_breakdown_singles()
+
+
+def _refresh_boost_verdicts():
+    """Refresh stored boost-pattern verdicts from the repo seed on boot.
+
+    A data disk seeded before the Nov 4 boost-rule change keeps its old
+    verdict strings forever — seed files are only copied on first boot,
+    so repo wording updates never reach a live disk. Verdicts are now
+    computed at render time (routers/boost.py) and never rendered from
+    storage, but scrub the stored copy too (defense in depth): copy
+    ONLY the verdict field from the seed, drop any legacy 'proven'
+    flag, and leave every other field — stats, boosts, all other live
+    state — exactly as it is.
+    """
+    try:
+        with open(paths.SEED_DIR / "boost_patterns.json",
+                  encoding="utf-8") as f:
+            seed = {p["id"]: p for p in json.load(f)}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return
+    changed = False
+    for pat in BOOST_PATTERNS:
+        seed_pat = seed.get(pat.get("id"))
+        if seed_pat is None:
+            continue
+        if pat.get("verdict") != seed_pat.get("verdict"):
+            pat["verdict"] = seed_pat.get("verdict")
+            changed = True
+        if "proven" in pat:
+            del pat["proven"]
+            changed = True
+    if changed:
+        save_boost_patterns()
+
+
+_refresh_boost_verdicts()
 
 
 def count_by_id(count_id):
