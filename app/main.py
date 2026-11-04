@@ -1,12 +1,12 @@
 """Invoice Pay Agent — FastAPI app: three PayPal rails (supplier pay, ad
-boosting, Quick Runs), Shelf Guide, dashboard."""
+boosting, Quick Runs), breakage/loss reporting, Shelf Guide, dashboard."""
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .routers import boost, dashboard, guide, ledger, manager, quick_runs, variance
+from .routers import boost, breakage, dashboard, guide, ledger, manager, quick_runs, variance
 
 # Load repo-root .env (PayPal sandbox credentials) when present.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -19,6 +19,7 @@ app.mount("/static", StaticFiles(directory=_static), name="static")
 app.include_router(manager.router)
 app.include_router(boost.router)
 app.include_router(quick_runs.router)
+app.include_router(breakage.router)
 app.include_router(guide.router)
 app.include_router(dashboard.router)
 app.include_router(variance.router)

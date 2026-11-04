@@ -57,6 +57,13 @@ the store's other two money-out jobs:
   problem, so the app surfaces it for promotion and findability.
 - **Marketing queue.** Promotion drafts generated from the store's proven
   research-first ad workflow; a human approves before anything posts.
+- **Breakage & loss reporting (`/breakage`).** When something breaks,
+  staff log it in seconds — by hand, or with a photo the vision step
+  identifies against the item master — and the product comes out of
+  inventory on the spot. Every loss is priced at cost and written to the
+  ledger as a *known* loss, kept separate from the shrink nobody can
+  explain; a defective item forks at the same door and is routed to
+  returns, back to the vendor.
 
 ## A chain of custody for every dollar
 
@@ -96,7 +103,8 @@ uvicorn app.main:app --reload
 ```
 
 Screens: `/` manager inbox → `/bill/<id>` review & pay · `/boost` ad boosting ·
-`/quick-runs` the errand loop · `/variance` diagnoses ·
+`/quick-runs` the errand loop · `/breakage` breakage & loss reporting ·
+`/variance` diagnoses ·
 `/claims` credit claims · `/ledger` chain of custody · `/guide` Shelf Guide ·
 `/dashboard` trending & marketing.
 
@@ -130,6 +138,9 @@ Credentials are read from the environment only — never commit them.
   swaps in an OCR/vision model behind the same interface.
 - [x] Hosted demo deployment — live at https://invoice-pay-agent.onrender.com
 - [x] All three PayPal rails built: Supplier Pay, Ad Boosting, Quick Runs
+- [x] Breakage / loss reporting — manual and photo doors; the product
+      leaves inventory on the spot and the priced loss lands in the
+      same ledger (defective items fork to returns)
 - [ ] Demo video (<3 min) + Devpost submission (target: Nov 11)
 
 ## Why one rail matters

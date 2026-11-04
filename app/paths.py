@@ -30,3 +30,7 @@ def ensure_data_dir():
     target_samples = DATA_DIR / "sample_invoices"
     if seed_samples.is_dir() and not target_samples.exists():
         shutil.copytree(seed_samples, target_samples)
+    seed_breakage = SEED_DIR / "sample_breakage"
+    target_breakage = DATA_DIR / "sample_breakage"
+    if seed_breakage.is_dir() and not target_breakage.exists():
+        shutil.copytree(seed_breakage, target_breakage)

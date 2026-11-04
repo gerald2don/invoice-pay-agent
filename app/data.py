@@ -43,6 +43,12 @@ QUICK_RUNS = _load("quick_runs.json")
 BOOST_PATTERNS = _load("boost_patterns.json")
 BOOSTS = _load("boosts.json")
 
+# Breakage / loss reporting: every logged loss (manual or photo door),
+# priced at cost, with the inventory counts it moved. Same DATA_DIR JSON
+# persistence — a loss logged before a restart is still on the books
+# after it, and the inventory decrement it made stays made.
+LOSSES = _load("losses.json")
+
 # The owner's standing small-dollar rule for Quick Runs: at or under this
 # total a routine run is pre-approved — it goes on its own and the manager
 # gets the notice after the fact. Above it, the run waits for a tap, like
@@ -84,6 +90,14 @@ def save_quick_runs():
 
 def save_boosts():
     _save("boosts.json", BOOSTS)
+
+
+def save_losses():
+    _save("losses.json", LOSSES)
+
+
+def save_inventory():
+    _save("inventory.json", INVENTORY)
 
 
 def run_by_id(run_id):

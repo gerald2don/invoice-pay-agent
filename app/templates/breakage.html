@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Breakage — log a loss — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Breakage — log a loss</h1>
+<p class="sub">Something breaks in a store every week: a case dropped in the back room, a bottle burst in the cooler. If that loss is never written down, it hides until a count comes up short — and gets lumped in with theft, which poisons the shrink number the owner actually watches. Log it here instead, by hand or with a photo, and the product comes out of inventory on the spot. Every loss is priced at cost and written to the same ledger as every dollar, so the <strong>known</strong> losses stay separate from the shrink nobody can explain. A defective item forks at the same door: out of inventory the same way, but routed to <strong>returns</strong> — it goes back to the vendor instead of into the breakage bucket.</p>
+
+{% if logged %}
+<div class="banner ok">
+  ✅ <strong>Logged — {{ logged.qty }} × {{ logged.product }}</strong> ({{ logged.condition_label }}).
+  On hand at {{ logged.store }}: <strong>{{ logged.before }} → {{ logged.after }}</strong>.
+  ${{ "%.2f"|format(logged.cost) }} at cost is on the books as a known loss{% if logged.condition == "defective" %}, routed to returns{% endif %}{% if logged.source == "photo" %}, with the photo kept as evidence{% endif %}.
+</div>
+{% endif %}
+
+{% if error %}
+<div class="banner warn"><div>⚠️ {{ error }}</div></div>
+{% endif %}
+
+<div class="cols">
+  <section>
+    <h2>✍️ Log it by hand</h2>
+    <p class="sub">Pick the product, say how many and what happened — the count moves when you submit.</p>
+    <form method="post" action="/breakage/log">
+      <p>
+        <label for="sku">Product</label><br>
+        <select id="sku" name="sku" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+          {% for p in products %}
+          <option value="{{ p.sku }}">{{ p.name }} — {{ p.sku }} · {{ p.on_hand }} on hand · ${{ "%.2f"|format(p.unit_cost) }} cost</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p>
+        <label for="qty">Quantity lost</label><br>
+        <input id="qty" type="number" name="qty" value="1" min="1" required style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+      </p>
+      <p>
+        <label for="condition">What happened</label><br>
+        <select id="condition" name="condition" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+          {% for value, label in conditions %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p><button type="submit">Log the loss — take it out of inventory</button></p>
+    </form>
+  </section>
+
+  <section>
+    <h2>📷 …or take a picture</h2>
+    <p class="sub">Snap the damage. The vision step identifies the product against the item master; you confirm the quantity, and the product is moved out of inventory automatically — the photo stays on the record as evidence.</p>
+    <form method="post" action="/breakage/photo" enctype="multipart/form-data">
+      <p><input type="file" name="photo" accept="image/*" required>
+      <button type="submit">Read this photo</button></p>
+    </form>
+    <p class="sub">Demo build: the vision step is fixture-backed (no extra keys needed) — it recognizes the sample breakage photo and identifies the product in it. Sample photo:
+    {% for s in samples %}<a href="/breakage-photos/{{ s.filename }}">{{ s.product }} — {{ s.description }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+    . Download it, then upload it above. In production the same step is an OCR/vision model call.</p>
+    {% if photo_error %}
+    <div class="banner warn"><div>⚠️ {{ photo_error }}</div></div>
+    {% endif %}
+  </section>
+</div>
+
+{% if identified %}
+<section class="card" style="margin: 14px 0;">
+  <h2 style="margin: 4px 0;">📷 Identified: {{ identified.product }} <span class="chip ok">{{ identified.method }} match</span></h2>
+  <p style="margin: 4px 0;"><img src="/breakage-photos/{{ identified.filename }}" alt="Uploaded breakage photo" style="max-width: 340px; border-radius: 10px; border: 1px solid var(--line);"></p>
+  <p class="sub" style="margin: 4px 0;">The photo matches the sample for <strong>{{ identified.product }}</strong> ({{ identified.sku }}) — system count right now: <strong>{{ identified.on_hand }} on hand</strong> at ${{ "%.2f"|format(identified.unit_cost) }} cost. Confirm how many were lost:</p>
+  <form method="post" action="/breakage/photo/confirm">
+    <input type="hidden" name="sku" value="{{ identified.sku }}">
+    <input type="hidden" name="photo" value="{{ identified.filename }}">
+    <p>
+      <label for="pqty">Quantity lost</label>
+      <input id="pqty" type="number" name="qty" value="1" min="1" required style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+      <label for="pcondition" style="margin-left: 12px;">What happened</label>
+      <select id="pcondition" name="condition" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+        {% for value, label in conditions %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p><button class="pay" type="submit">Confirm — remove from inventory</button></p>
+  </form>
+</section>
+{% endif %}
+
+<h2>Known losses — the honest bucket</h2>
+{% if losses %}
+<table>
+  <tr><th>Date</th><th>Product</th><th>Qty</th><th>What happened</th><th>Cost</th><th>On hand</th><th>Evidence</th></tr>
+  {% for l in losses %}
+  <tr>
+    <td>{{ l.date }}</td>
+    <td>{{ l.product }}<div class="sub">{{ l.sku }} · {{ l.store }} · logged {% if l.source == "photo" %}from a photo{% else %}by hand{% endif %}</div></td>
+    <td>{{ l.qty }}</td>
+    <td>{{ l.condition_label }}{% if l.condition == "defective" %} <span class="chip mid">→ returns to vendor</span>{% else %} <span class="chip wait">breakage</span>{% endif %}</td>
+    <td>${{ "%.2f"|format(l.cost) }}</td>
+    <td>{{ l.before }} → {{ l.after }}</td>
+    <td>{% if l.photo %}<img src="/breakage-photos/{{ l.photo }}" alt="Evidence photo" style="height: 52px; border-radius: 6px; border: 1px solid var(--line);">{% else %}—{% endif %}</td>
+  </tr>
+  {% endfor %}
+  <tr class="total"><td colspan="4">Known losses on the books</td><td>${{ "%.2f"|format(known_total) }}</td><td></td><td></td></tr>
+</table>
+<p class="sub">Every loss above is also a <strong>BREAKAGE_LOGGED</strong> event in the <a href="/ledger">event ledger</a> — the same hash-linked chain of custody as the invoices and payouts. These are the losses the store can explain and price; whatever shrink is left after them is the part worth investigating.</p>
+{% else %}
+<p class="sub">No losses logged yet. When one is, it appears here — priced, counted out of inventory, and written to the <a href="/ledger">event ledger</a>.</p>
+{% endif %}
+{% endblock %}
