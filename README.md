@@ -21,6 +21,29 @@ This workflow already runs in production at the pilot store (a real
 independent liquor store in Effingham, Illinois) — the hackathon build adds
 the PayPal payment leg.
 
+## One PayPal rail, three loops — all built and working
+
+Supplier Pay is the first loop on the rail. The same PayPal connection —
+one token, one Payouts API, one approval doctrine, one ledger — also runs
+the store's other two money-out jobs:
+
+- **Ad Boosting (`/boost`).** Boosting means paying an ad platform to show
+  a post to more people. The store's rule: only a pattern its **own post
+  results have already proven** can be boosted — the in-app tracker lists
+  each past post's reach, engagement, and store visits, and marks the ones
+  that haven't proven themselves **not eligible** (the server enforces it,
+  not just the label). The manager picks a proven pattern, sets a budget
+  and a number of days, approves, and PayPal pays the ad platform. The
+  boost, its budget, and its payout reference land in the same ledger.
+- **Quick Runs (`/quick-runs`).** The errand loop for what distributors
+  don't bring — cleaning supplies, bags, cups, receipt tape. The shift
+  checklist flags the need, the agent builds the itemized cart at the
+  store's usual spot-buy source, and PayPal pays on approval — or on the
+  owner's standing **small-dollar rule**: runs at or under $25 are
+  pre-approved and go on their own, with the notice after the fact.
+  Delivery is tracked and the receipt files into the same books as an
+  invoice, payout reference and all.
+
 ## The wider platform (same app)
 
 - **Shelf Guide — staff product finder.** Name a product, get a dot on the
@@ -72,7 +95,8 @@ uvicorn app.main:app --reload
 # open http://127.0.0.1:8000
 ```
 
-Screens: `/` manager inbox → `/bill/<id>` review & pay · `/variance` diagnoses ·
+Screens: `/` manager inbox → `/bill/<id>` review & pay · `/boost` ad boosting ·
+`/quick-runs` the errand loop · `/variance` diagnoses ·
 `/claims` credit claims · `/ledger` chain of custody · `/guide` Shelf Guide ·
 `/dashboard` trending & marketing.
 
@@ -104,28 +128,19 @@ Credentials are read from the environment only — never commit them.
   are recognized by content/perceptual hash and read as their verified
   ground-truth text, so the flow runs with no extra keys. Production
   swaps in an OCR/vision model behind the same interface.
-- [ ] Hosted demo deployment
+- [x] Hosted demo deployment — live at https://invoice-pay-agent.onrender.com
+- [x] All three PayPal rails built: Supplier Pay, Ad Boosting, Quick Runs
 - [ ] Demo video (<3 min) + Devpost submission (target: Nov 11)
 
-## Where this goes — same rail, second loop
+## Why one rail matters
 
-The PayPal flow in this repo — paying **suppliers** on manager approval — is
-the first loop on the rail, and the only PayPal flow here that is built and
-working. The designed next loop reuses the same rail for growth: in the
-platform's Marketing module, a trend tracker proves which ad patterns
-actually work from a store's own post results, and only those proven
-patterns can be **boosted** — the store connects its PayPal, the manager
-approves the amount and duration before any charge, and the boosted results
-feed back into the tracker. Money out to suppliers and money out to
-audiences on one rail, with a human approving every movement. Boosting is a
-roadmap concept at this stage — it is not implemented in this repo.
-
-A third loop is designed on the same rail: **Quick Runs** — when a store runs
-out of the supplies distributors don't bring (cleaning supplies, bags, cups),
-the AI builds the delivery cart at the store's usual source, the manager
-approves (or an owner-set small-dollar limit pre-approves routine runs),
-PayPal pays, and the receipt files into the same ledger. Also a roadmap
-concept — not implemented here.
+A small store's money leaves through more doors than supplier invoices —
+it pays for reach and it pays for the run to the store. Running all three
+on the one PayPal connection the store already trusts means every dollar
+out gets the same treatment: a human-approved (or owner-rule-approved)
+decision, a real payout with a reference, and a line in the same
+hash-linked ledger. Nothing moves off the books, and nothing moves
+without a yes the owner set the terms for.
 
 ## License
 

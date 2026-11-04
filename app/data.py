@@ -35,6 +35,20 @@ COUNTS = _load("counts.json")
 EVIDENCE = _load("evidence.json")
 CLAIMS = _load("claims.json")
 
+# Rails 2 and 3 on the same PayPal connection: Ad Boosting and Quick Runs.
+# Same DATA_DIR JSON persistence as invoices/claims — seeded from data/*.json
+# on first boot, written back on every change, so a paid run or an active
+# boost survives a restart.
+QUICK_RUNS = _load("quick_runs.json")
+BOOST_PATTERNS = _load("boost_patterns.json")
+BOOSTS = _load("boosts.json")
+
+# The owner's standing small-dollar rule for Quick Runs: at or under this
+# total a routine run is pre-approved — it goes on its own and the manager
+# gets the notice after the fact. Above it, the run waits for a tap, like
+# everything else in the platform.
+AUTO_APPROVE_LIMIT = 25.00
+
 # Runtime state, persisted to DATA_DIR/runtime_state.json so payments and
 # resolutions survive a restart on a hosted deploy (on the seeded first
 # boot the file does not exist yet and both start empty).
@@ -62,6 +76,32 @@ def save_invoices():
 
 def save_claims():
     _save("claims.json", CLAIMS)
+
+
+def save_quick_runs():
+    _save("quick_runs.json", QUICK_RUNS)
+
+
+def save_boosts():
+    _save("boosts.json", BOOSTS)
+
+
+def run_by_id(run_id):
+    for run in QUICK_RUNS:
+        if run["id"] == run_id:
+            return run
+    return None
+
+
+def run_total(run):
+    return round(sum(i["qty"] * i["price"] for i in run["items"]), 2)
+
+
+def pattern_by_id(pattern_id):
+    for pat in BOOST_PATTERNS:
+        if pat["id"] == pattern_id:
+            return pat
+    return None
 
 
 def inventory_for(sku, store):

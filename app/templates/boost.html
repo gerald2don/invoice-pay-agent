@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Ad Boosting — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Ad Boosting — pay to repeat what already worked</h1>
+<p class="sub"><strong>What boosting is:</strong> paying the ad platform to show one of the store's posts to more people. <strong>This store's rule:</strong> only a post pattern the store's <em>own results</em> have already proven can be boosted — the numbers below are from the store's own past posts, and they decide what's eligible. An unproven post can't be boosted at any price, so ad money never follows a hunch. The manager picks a proven pattern, sets the budget and the days, approves — and <strong>PayPal pays the ad platform</strong>, on the same connection that pays the suppliers. The spend lands in the same ledger as every other dollar.</p>
+
+<h2>The store's own results — what has proven itself</h2>
+<table>
+  <tr><th>Post</th><th>Pattern</th><th>Posted</th><th>Reach</th><th>Engagement</th><th>Store visits</th><th>Boost?</th></tr>
+  {% for pat in patterns %}
+  <tr>
+    <td><strong>{{ pat.title }}</strong><div class="sub">{{ pat.product }}</div></td>
+    <td>{{ pat.pattern }}</td>
+    <td>{{ pat.posted }}</td>
+    <td>{{ "{:,}".format(pat.reach) }}</td>
+    <td>{{ "{:,}".format(pat.engagement) }}</td>
+    <td>{{ pat.store_visits }}</td>
+    <td>
+      {% if pat.proven %}<span class="chip ok">eligible — proven</span>
+      {% else %}<span class="chip low">not eligible — hasn't proven itself</span>{% endif %}
+    </td>
+  </tr>
+  <tr><td colspan="7" class="sub">{{ pat.verdict }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Boost a proven pattern</h2>
+{% for pat in patterns if pat.proven %}
+<section class="card" style="margin: 14px 0;">
+  <h2 style="margin: 4px 0;">{{ pat.title }}</h2>
+  <p class="sub" style="margin: 4px 0;">{{ pat.pattern }} — last run: {{ "{:,}".format(pat.reach) }} reach, {{ pat.store_visits }} store visits.</p>
+  <form method="post" action="/boost/{{ pat.id }}/pay">
+    <p style="margin: 8px 0;">
+      <strong>Budget:</strong>
+      {% for b in budgets %}
+      <label style="margin-right: 12px;"><input type="radio" name="budget" value="{{ b }}" {% if b == 20 %}checked{% endif %}> ${{ b }}</label>
+      {% endfor %}
+    </p>
+    <p style="margin: 8px 0;">
+      <strong>Run for:</strong>
+      {% for d in durations %}
+      <label style="margin-right: 12px;"><input type="radio" name="days" value="{{ d }}" {% if d == 5 %}checked{% endif %}> {{ d }} days</label>
+      {% endfor %}
+    </p>
+    <button class="pay" type="submit">Approve &amp; Pay via PayPal</button>
+    {% if not paypal_configured %}<p class="sub">PayPal sandbox credentials not configured — this boost will record a <strong>simulated</strong> payment so the flow can be reviewed.</p>{% endif %}
+  </form>
+</section>
+{% endfor %}
+<p class="sub">The Tuesday price-drop graphic is not in this list — it hasn't proven itself, so it can't be boosted. That's the rule working, not a missing button.</p>
+
+<h2>Boosts on the books</h2>
+{% if boosts %}
+<table>
+  <tr><th>Boost</th><th>Pattern boosted</th><th>Budget</th><th>Days</th><th>Started</th><th>Status</th><th>Payout reference</th></tr>
+  {% for b in boosts %}
+  <tr>
+    <td>{{ b.id }}</td>
+    <td><strong>{{ b.title }}</strong><div class="sub">{{ b.pattern }}</div></td>
+    <td>${{ "%.2f"|format(b.budget) }}</td>
+    <td>{{ b.days }}</td>
+    <td>{{ b.started }}</td>
+    <td><span class="chip ok">{{ b.status }}</span></td>
+    <td>{{ b.payment.reference }} · {{ b.payment.provider }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="sub">Every boost is also written to the <a href="/ledger">event ledger</a> — the same hash-linked chain of custody as the supplier payments.</p>
+{% else %}
+<p class="sub">No boosts yet. When the manager approves one, it appears here and in the <a href="/ledger">event ledger</a>.</p>
+{% endif %}
+{% endblock %}

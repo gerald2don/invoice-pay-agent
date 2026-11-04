@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Quick Runs — Invoice Pay Agent{% endblock %}
+{% block body %}
+<h1>Quick Runs — the errand loop</h1>
+<p class="sub">Stores run out of things their distributors don't bring — cleaning supplies, bags, cups, receipt tape — and today that means someone leaves the floor, drives to the store, and loses the receipt in a pocket. A Quick Run closes that loop: the shift checklist flags what's out, the agent builds the cart at the store's usual spot-buy source, a manager approves, and <strong>PayPal pays</strong>. Delivery is tracked, and the receipt files into the same books as an invoice — the errand becomes a record.</p>
+
+<div class="banner warn">
+  🏷️ <strong>Owner rule — small-dollar auto-approve:</strong> runs at or under <strong>${{ "%.2f"|format(limit) }}</strong> are pre-approved by the owner. They go on their own and the manager gets the notice after the fact — the limit is the human's standing yes. Above ${{ "%.2f"|format(limit) }}, a run waits for a manager's tap, like everything else in this app. Nothing charges without one of those two yeses.
+</div>
+
+{% for row in runs %}
+{% set run = row.run %}
+<section class="card" style="margin: 14px 0;">
+  <h2 style="margin: 4px 0;">{{ run.id }} — {{ run.source.name }}
+    {% if run.status == "paid" %}<span class="chip ok">paid · {{ run.payment.reference }}</span>
+    {% elif run.status == "auto_approved" %}<span class="chip mid">auto-approved — under the ${{ "%.0f"|format(limit) }} rule</span>
+    {% elif run.status == "awaiting_approval" %}<span class="chip wait">awaiting approval</span>
+    {% else %}<span class="chip wait">flagged — needs a run built</span>{% endif %}
+  </h2>
+  <p style="margin: 4px 0;"><strong>Flagged by:</strong> {{ run.flagged_by }}</p>
+  <p class="sub" style="margin: 4px 0;">{{ run.need }}</p>
+  <table>
+    <tr><th>Item</th><th>Qty</th><th>Price</th><th>Ext.</th></tr>
+    {% for i in run["items"] %}
+    <tr><td>{{ i.name }}</td><td>{{ i.qty }}</td><td>${{ "%.2f"|format(i.price) }}</td><td>${{ "%.2f"|format(i.qty * i.price) }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td colspan="3">Run total</td><td>${{ "%.2f"|format(row.total) }}</td></tr>
+  </table>
+  {% if run.payment %}
+  <div class="banner ok" style="margin: 8px 0;">
+    ✅ Paid through {{ run.payment.provider }} — reference <strong>{{ run.payment.reference }}</strong> · ${{ "%.2f"|format(run.payment.amount) }} to {{ run.payment.payee }}.
+    {% if run.auto_approved %}<div>This run was auto-approved under the owner's ${{ "%.2f"|format(limit) }} rule — no tap was needed; the manager was notified after the fact.</div>{% endif %}
+    <div>🚚 Delivery: {{ run.delivery }}</div>
+  </div>
+  {% elif run.status == "flagged" %}
+  <form method="post" action="/quick-runs/{{ run.id }}/build">
+    <button type="submit">Build run</button>
+    <span class="sub">assembles the cart at {{ run.source.name }} and checks it against the ${{ "%.2f"|format(limit) }} rule</span>
+  </form>
+  {% elif run.status == "auto_approved" %}
+  <form method="post" action="/quick-runs/{{ run.id }}/pay">
+    <button class="pay" type="submit">Pay ${{ "%.2f"|format(row.total) }} via PayPal — auto-approved</button>
+    <span class="sub">already approved under the owner's rule; paying sends the order and files the receipt</span>
+  </form>
+  {% else %}
+  <form method="post" action="/quick-runs/{{ run.id }}/pay">
+    <button class="pay" type="submit">Approve &amp; Pay ${{ "%.2f"|format(row.total) }} via PayPal</button>
+    {% if not paypal_configured %}<p class="sub">PayPal sandbox credentials not configured — this run will record a <strong>simulated</strong> payment so the flow can be reviewed.</p>{% endif %}
+  </form>
+  {% endif %}
+</section>
+{% endfor %}
+
+<h2>Receipts filed — the same books as the invoices</h2>
+{% if receipts %}
+<table>
+  <tr><th>Run</th><th>Source</th><th>Total</th><th>Paid via</th><th>Payout reference</th><th>Delivery</th></tr>
+  {% for row in receipts %}
+  <tr>
+    <td>{{ row.run.id }}</td>
+    <td>{{ row.run.source.name }}</td>
+    <td>${{ "%.2f"|format(row.total) }}</td>
+    <td>{{ row.run.payment.provider }}</td>
+    <td>{{ row.run.payment.reference }}</td>
+    <td>{{ row.run.delivery }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="sub">Every paid run is also written to the <a href="/ledger">event ledger</a> — the same hash-linked chain of custody as the supplier invoices.</p>
+{% else %}
+<p class="sub">No runs paid yet. When one is, its receipt appears here and in the <a href="/ledger">event ledger</a>.</p>
+{% endif %}
+{% endblock %}
