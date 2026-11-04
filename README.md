@@ -67,7 +67,12 @@ the store's other two money-out jobs:
   inventory on the spot. Every loss is priced at cost and written to the
   ledger as a *known* loss, kept separate from the shrink nobody can
   explain; a defective item forks at the same door and is routed to
-  returns, back to the vendor.
+  returns, back to the vendor. Every log carries a generic reason (why
+  it broke or was taken out) for companies that require one on a
+  write-off, and when a broken package breaks down into singles, the
+  unbroken singles are salvaged into singles stock in the same touch
+  that minuses the package — only the destroyed units are priced as
+  the loss.
 
 ## A chain of custody for every dollar
 

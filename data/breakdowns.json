@@ -1,0 +1,17 @@
+{
+ "mappings": [
+  {
+   "package_sku": "WA-8101",
+   "singles_sku": "WA-8103",
+   "units_per_pack": 24,
+   "singles": {
+    "name": "Spring Water — single bottle",
+    "dept": "Water",
+    "unit_cost": 0.27,
+    "seed_on_hand": {
+     "Store A": 14
+    }
+   }
+  }
+ ]
+}

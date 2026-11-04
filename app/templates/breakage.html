@@ -2,13 +2,17 @@
 {% block title %}Breakage — log a loss — Invoice Pay Agent{% endblock %}
 {% block body %}
 <h1>Breakage — log a loss</h1>
-<p class="sub">Something breaks in a store every week: a case dropped in the back room, a bottle burst in the cooler. If that loss is never written down, it hides until a count comes up short — and gets lumped in with theft, which poisons the shrink number the owner actually watches. Log it here instead, by hand or with a photo, and the product comes out of inventory on the spot. Every loss is priced at cost and written to the same ledger as every dollar, so the <strong>known</strong> losses stay separate from the shrink nobody can explain. A defective item forks at the same door: out of inventory the same way, but routed to <strong>returns</strong> — it goes back to the vendor instead of into the breakage bucket.</p>
+<p class="sub">Something breaks in a store every week: a case dropped in the back room, a bottle burst in the cooler. If that loss is never written down, it hides until a count comes up short — and gets lumped in with theft, which poisons the shrink number the owner actually watches. Log it here instead, by hand or with a photo, and the product comes out of inventory on the spot. Every loss is priced at cost and written to the same ledger as every dollar, so the <strong>known</strong> losses stay separate from the shrink nobody can explain. Every log asks for a generic <strong>reason</strong> — why it broke or was taken out — for the companies that require one on a write-off. And when a broken package breaks down into singles, the unbroken ones are <strong>salvaged</strong>: they go back into singles stock in the same touch that minuses the package, and only the destroyed units are priced as the loss. A defective item forks at the same door: out of inventory the same way, but routed to <strong>returns</strong> — it goes back to the vendor instead of into the breakage bucket.</p>
 
 {% if logged %}
 <div class="banner ok">
-  ✅ <strong>Logged — {{ logged.qty }} × {{ logged.product }}</strong> ({{ logged.condition_label }}).
+  ✅ <strong>Logged — {{ logged.qty }} × {{ logged.product }}</strong> ({{ logged.condition_label }}{% if logged.reason_label %} · {{ logged.reason_label }}{% endif %}).
   On hand at {{ logged.store }}: <strong>{{ logged.before }} → {{ logged.after }}</strong>.
   ${{ "%.2f"|format(logged.cost) }} at cost is on the books as a known loss{% if logged.condition == "defective" %}, routed to returns{% endif %}{% if logged.source == "photo" %}, with the photo kept as evidence{% endif %}.
+  {% if logged.salvage %}
+  <div>↩ Salvage: <strong>{{ logged.salvage.recovered }} unbroken singles</strong> moved into singles stock ({{ logged.salvage.singles_product }}: {{ logged.salvage.singles_before }} → {{ logged.salvage.singles_after }}); {{ logged.salvage.destroyed }} destroyed and priced as the loss.</div>
+  {% endif %}
+  {% if logged.note %}<div>Note: {{ logged.note }}</div>{% endif %}
 </div>
 {% endif %}
 
@@ -25,13 +29,18 @@
         <label for="sku">Product</label><br>
         <select id="sku" name="sku" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
           {% for p in products %}
-          <option value="{{ p.sku }}">{{ p.name }} — {{ p.sku }} · {{ p.on_hand }} on hand · ${{ "%.2f"|format(p.unit_cost) }} cost</option>
+          <option value="{{ p.sku }}" data-units-per-pack="{{ p.singles.units_per_pack if p.singles else '' }}" data-singles-name="{{ p.singles.name if p.singles else '' }}">{{ p.name }} — {{ p.sku }} · {{ p.on_hand }} on hand · ${{ "%.2f"|format(p.unit_cost) }} cost{% if p.singles %} · breaks down into {{ p.singles.name }} singles{% endif %}</option>
           {% endfor %}
         </select>
       </p>
       <p>
-        <label for="qty">Quantity lost</label><br>
+        <label for="qty" id="qty-label">Quantity lost</label><br>
         <input id="qty" type="number" name="qty" value="1" min="1" required style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+      </p>
+      <p id="salvage-block" style="display: none;">
+        <label for="survivors">How many singles survived?</label><br>
+        <input id="survivors" type="number" name="survivors" value="0" min="0" style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+        <span class="sub" id="survivors-hint"></span>
       </p>
       <p>
         <label for="condition">What happened</label><br>
@@ -41,8 +50,48 @@
           {% endfor %}
         </select>
       </p>
+      <p>
+        <label for="reason">Reason — why it broke or was taken out</label><br>
+        <select id="reason" name="reason" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+          <option value="">— pick a reason —</option>
+          {% for value, label in reasons %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p>
+        <label for="note">Note (optional)</label><br>
+        <input id="note" type="text" name="note" placeholder="Anything more specific — cooler 2, back room, delivery #…" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+      </p>
       <p><button type="submit">Log the loss — take it out of inventory</button></p>
     </form>
+    <script>
+      (function () {
+        var sku = document.getElementById("sku");
+        var block = document.getElementById("salvage-block");
+        var survivors = document.getElementById("survivors");
+        var hint = document.getElementById("survivors-hint");
+        var qtyLabel = document.getElementById("qty-label");
+        function sync() {
+          var opt = sku.options[sku.selectedIndex];
+          var per = opt.getAttribute("data-units-per-pack");
+          if (per) {
+            block.style.display = "";
+            survivors.max = per;
+            if (+survivors.value > +per) survivors.value = per;
+            hint.textContent = "of " + per + " per pack — the survivors go into " +
+              opt.getAttribute("data-singles-name") + " stock, and the package comes off the count.";
+            qtyLabel.textContent = "Packages broken";
+          } else {
+            block.style.display = "none";
+            survivors.value = 0;
+            qtyLabel.textContent = "Quantity lost";
+          }
+        }
+        sku.addEventListener("change", sync);
+        sync();
+      })();
+    </script>
   </section>
 
   <section>
@@ -70,7 +119,7 @@
     <input type="hidden" name="sku" value="{{ identified.sku }}">
     <input type="hidden" name="photo" value="{{ identified.filename }}">
     <p>
-      <label for="pqty">Quantity lost</label>
+      <label for="pqty">{% if identified.units_per_pack %}Packages broken{% else %}Quantity lost{% endif %}</label>
       <input id="pqty" type="number" name="qty" value="1" min="1" required style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
       <label for="pcondition" style="margin-left: 12px;">What happened</label>
       <select id="pcondition" name="condition" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
@@ -78,6 +127,26 @@
         <option value="{{ value }}">{{ label }}</option>
         {% endfor %}
       </select>
+    </p>
+    {% if identified.units_per_pack %}
+    <p>
+      <label for="psurvivors">How many singles survived?</label>
+      <input id="psurvivors" type="number" name="survivors" value="0" min="0" max="{{ identified.units_per_pack }}" required style="width: 110px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+      <span class="sub">of {{ identified.units_per_pack }} per pack — survivors go into {{ identified.singles_name }} stock ({{ identified.singles_on_hand }} on hand now); the package comes off the count.</span>
+    </p>
+    {% endif %}
+    <p>
+      <label for="preason">Reason — why it broke or was taken out</label><br>
+      <select id="preason" name="reason" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
+        <option value="">— pick a reason —</option>
+        {% for value, label in reasons %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="pnote">Note (optional)</label><br>
+      <input id="pnote" type="text" name="note" placeholder="Anything more specific…" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);">
     </p>
     <p><button class="pay" type="submit">Confirm — remove from inventory</button></p>
   </form>
@@ -91,9 +160,10 @@
   {% for l in losses %}
   <tr>
     <td>{{ l.date }}</td>
-    <td>{{ l.product }}<div class="sub">{{ l.sku }} · {{ l.store }} · logged {% if l.source == "photo" %}from a photo{% else %}by hand{% endif %}</div></td>
-    <td>{{ l.qty }}</td>
-    <td>{{ l.condition_label }}{% if l.condition == "defective" %} <span class="chip mid">→ returns to vendor</span>{% else %} <span class="chip wait">breakage</span>{% endif %}</td>
+    <td>{{ l.product }}<div class="sub">{{ l.sku }} · {{ l.store }} · logged {% if l.source == "photo" %}from a photo{% else %}by hand{% endif %}</div>
+    {% if l.salvage %}<div class="sub">↩ {{ l.salvage.recovered }} singles recovered to singles stock ({{ l.salvage.singles_sku }}: {{ l.salvage.singles_before }} → {{ l.salvage.singles_after }}) · {{ l.salvage.destroyed }} destroyed</div>{% endif %}</td>
+    <td>{{ l.qty }}{% if l.salvage %} pkg{% endif %}</td>
+    <td>{{ l.condition_label }}{% if l.condition == "defective" %} <span class="chip mid">→ returns to vendor</span>{% else %} <span class="chip wait">breakage</span>{% endif %}{% if l.reason_label %}<div class="sub">{{ l.reason_label }}{% if l.note %} — {{ l.note }}{% endif %}</div>{% endif %}</td>
     <td>${{ "%.2f"|format(l.cost) }}</td>
     <td>{{ l.before }} → {{ l.after }}</td>
     <td>{% if l.photo %}<img src="/breakage-photos/{{ l.photo }}" alt="Evidence photo" style="height: 52px; border-radius: 6px; border: 1px solid var(--line);">{% else %}—{% endif %}</td>

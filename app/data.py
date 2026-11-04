@@ -49,6 +49,16 @@ BOOSTS = _load("boosts.json")
 # after it, and the inventory decrement it made stays made.
 LOSSES = _load("losses.json")
 
+# Pack breakdowns: the packages that can be broken down into singles
+# (package SKU -> singles SKU + units per pack). Drives the breakage
+# salvage loop: when a mapped package breaks, the unbroken singles are
+# recovered into singles stock in the same touch that minuses the
+# package — Gerald's standing kit-breakdown law (Nov 2: singles added
+# but the kit never minused is how counts drift into fiction).
+BREAKDOWNS = _load("breakdowns.json")
+BREAKDOWN_BY_PACKAGE = {m["package_sku"]: m
+                        for m in BREAKDOWNS.get("mappings", [])}
+
 # The owner's standing small-dollar rule for Quick Runs: at or under this
 # total a routine run is pre-approved — it goes on its own and the manager
 # gets the notice after the fact. Above it, the run waits for a tap, like
@@ -123,6 +133,38 @@ def inventory_for(sku, store):
         if row["sku"] == sku and row["store"] == store:
             return row
     return None
+
+
+def breakdown_for(sku):
+    """The pack-breakdown mapping for a package SKU, or None."""
+    return BREAKDOWN_BY_PACKAGE.get(sku)
+
+
+def _seed_breakdown_singles():
+    """Make sure every mapped singles product exists in the item master
+    and carries a seeded inventory row. A data disk seeded before the
+    pair existed (the hosted deploy) gains the singles row on boot —
+    appended with the seed count and persisted, so from then on it is
+    an ordinary inventory row whose movements stay moved."""
+    changed = False
+    for m in BREAKDOWN_BY_PACKAGE.values():
+        singles = m["singles"]
+        if m["singles_sku"] not in ITEM_MASTER:
+            ITEM_MASTER[m["singles_sku"]] = {
+                "sku": m["singles_sku"], "name": singles["name"],
+                "dept": singles["dept"]}
+        for store, qty in singles.get("seed_on_hand", {}).items():
+            if inventory_for(m["singles_sku"], store) is None:
+                INVENTORY.append({
+                    "sku": m["singles_sku"], "store": store,
+                    "on_hand": qty, "case_pack": m["units_per_pack"],
+                    "unit_cost": singles["unit_cost"]})
+                changed = True
+    if changed:
+        save_inventory()
+
+
+_seed_breakdown_singles()
 
 
 def count_by_id(count_id):
