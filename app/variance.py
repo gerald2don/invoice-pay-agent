@@ -336,6 +336,7 @@ def create_claim(var):
         "credit": None, "recovery": None,
     }
     data.CLAIMS.append(claim)
+    data.save_claims()
     return claim
 
 
@@ -370,6 +371,7 @@ def watchdog():
                         credit_memo=line.get("memo"),
                         amount=claim["amount"],
                     )
+                    data.save_claims()
                     break
             if claim.get("credit"):
                 break
@@ -435,6 +437,7 @@ def confirm_found(var):
         if c["sku"] == var["sku"] and c["id"] != var["id"] \
                 and c["date"] == var["count"]["date"]:
             data.RESOLUTIONS[c["id"]] = {"type": "found", "note": note}
+    data.save_runtime_state()
     return note
 
 

@@ -1,0 +1,27 @@
+# Render deploy blueprint — Invoice Pay Agent (PayPal AI Hackathon demo).
+# Paid starter instance (never spins down) + 1 GB persistent disk mounted
+# at /var/data; the app points its data layer at the disk via DATA_DIR so
+# the hash-linked ledger and payment state survive restarts/redeploys.
+# PayPal sandbox credentials are set in the Render dashboard (sync: false)
+# and never committed.
+services:
+  - type: web
+    name: invoice-pay-agent
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    disk:
+      name: invoice-pay-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: PAYPAL_ENV
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false

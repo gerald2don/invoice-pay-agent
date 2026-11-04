@@ -15,16 +15,20 @@ honest local log. Because every event is already hash-linked, the log is
 chain-ready by design: the history (or just its head hash) could later be
 anchored to a public chain without changing the event format.
 
-Storage: data/ledger.json, a JSON list that is only ever appended to. On
+Storage: ledger.json in the app data dir (the repo's data/ folder locally,
+or the DATA_DIR env var's persistent disk when hosted), a JSON list that
+is only ever appended to. On
 first run (file missing or empty) the demo scenario's history on file is
 seeded in chronological order, marked payload seeded=true.
 """
 import hashlib
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
-LEDGER_PATH = Path(__file__).resolve().parent.parent / "data" / "ledger.json"
+from . import paths
+
+paths.ensure_data_dir()
+LEDGER_PATH = paths.DATA_DIR / "ledger.json"
 GENESIS_PREV = "0" * 64
 
 _EVENTS = None  # in-memory cache; the file is the source of truth

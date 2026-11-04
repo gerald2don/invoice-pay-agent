@@ -4,14 +4,21 @@ The pay flow runs on fictional sample data (see README). The Shelf Guide
 locations are the pilot store's real, verified product locations.
 """
 import json
-from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+from . import paths
+from .paths import DATA_DIR
+
+paths.ensure_data_dir()
 
 
 def _load(name):
     with open(DATA_DIR / name, encoding="utf-8") as f:
         return json.load(f)
+
+
+def _save(name, obj):
+    with open(DATA_DIR / name, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=1, ensure_ascii=False)
 
 
 SUPPLIERS = {s["id"]: s for s in _load("suppliers.json")}
@@ -28,11 +35,33 @@ COUNTS = _load("counts.json")
 EVIDENCE = _load("evidence.json")
 CLAIMS = _load("claims.json")
 
-# Runtime state (skeleton): payments made this session, keyed by invoice id.
-PAYMENTS = {}
+# Runtime state, persisted to DATA_DIR/runtime_state.json so payments and
+# resolutions survive a restart on a hosted deploy (on the seeded first
+# boot the file does not exist yet and both start empty).
+def _load_runtime_state():
+    try:
+        with open(DATA_DIR / "runtime_state.json", encoding="utf-8") as f:
+            state = json.load(f)
+        return state.get("payments", {}), state.get("resolutions", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}, {}
 
-# Runtime state: variance resolutions recorded this session, keyed by count id.
-RESOLUTIONS = {}
+
+# Payments made, keyed by invoice id.
+PAYMENTS, RESOLUTIONS = _load_runtime_state()
+
+
+def save_runtime_state():
+    _save("runtime_state.json",
+          {"payments": PAYMENTS, "resolutions": RESOLUTIONS})
+
+
+def save_invoices():
+    _save("invoices.json", INVOICES)
+
+
+def save_claims():
+    _save("claims.json", CLAIMS)
 
 
 def inventory_for(sku, store):

@@ -129,6 +129,7 @@ def extract_add(invoice_text: str = Form(...)):
         "stated_total": result["stated_total"],
     }
     data.INVOICES.append(inv)
+    data.save_invoices()
     supplier = data.SUPPLIERS[inv["supplier_id"]]
     ledger.safe_record(
         "INVOICE_RECEIVED",
@@ -167,6 +168,9 @@ def pay(invoice_id: str):
         variance.mark_recovered(claim, record, inv)
     data.PAYMENTS[invoice_id] = record
     inv["status"] = "paid"
+    data.save_runtime_state()
+    data.save_invoices()
+    data.save_claims()
     _summary = (f"Payment sent via {record['provider']} — "
                 f"${record['amount']:.2f} to {supplier['name']} for invoice "
                 f"{inv['number']} (batch {record['reference']})")
