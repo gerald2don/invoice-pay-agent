@@ -200,6 +200,24 @@ def to_pipeline_text(read):
     return "\n".join(rows)
 
 
+def list_generate_models():
+    """Diagnostic: which models this key can actually call generateContent on."""
+    api_key=<redacted>
+    if not api_key:
+        return {"error": "GEMINI_API_KEY is not configured"}
+    try:
+        resp = httpx.get(API_ROOT, params={"pageSize": 200},
+                         headers={"x-goog-api-key": api_key}, timeout=30)
+        resp.raise_for_status()
+        names = []
+        for m in resp.json().get("models", []):
+            if "generateContent" in (m.get("supportedGenerationMethods") or []):
+                names.append((m.get("name") or "").removeprefix("models/"))
+        return {"models": names}
+    except Exception as exc:
+        return {"error": f"model list failed: {exc}"}
+
+
 def read_invoice(image_bytes):
     """Read an invoice photo with the vision model.
 

@@ -81,6 +81,7 @@ def vision_status():
         "configured": vision_model.configured(),
         "model": vision_model.model_name(),
         "last_error": vision.last_model_error(),
+        "available": vision_model.list_generate_models(),
     })
 
 
