@@ -140,11 +140,18 @@ Credentials are read from the environment only — never commit them.
 ## Roadmap to Nov 12
 
 - [x] Skeleton: three screens, sample data, simulated/sandbox payment path
-- [x] Live extraction + matching on uploaded invoice photos — the demo
-  vision step (`app/vision.py`) is fixture-backed: sample invoice photos
-  are recognized by content/perceptual hash and read as their verified
-  ground-truth text, so the flow runs with no extra keys. Production
-  swaps in an OCR/vision model behind the same interface.
+- [x] Live extraction + matching on uploaded invoice photos — the
+  vision step (`app/vision.py`) reads photos with a real vision model
+  when `GEMINI_API_KEY` is set: Google Gemini (`app/vision_model.py`)
+  returns the invoice's structured content, which feeds the extraction
+  engine's item-master matching and confidence scoring unchanged. With
+  no key — or if a model read ever fails — the door falls back to
+  recognizing the demo's sample invoice photos by content/perceptual
+  hash and reading their verified ground-truth text, so the hosted
+  demo always runs.
+- [x] The vision model swap the roadmap promised is DONE (Nov 9, 2026):
+  Gemini wired behind the existing vision interface; the fixture
+  hash-match remains as the automatic fallback.
 - [x] Hosted demo deployment — live at https://invoice-pay-agent.onrender.com
 - [x] All three PayPal rails built: Supplier Pay, Ad Boosting, Quick Runs
 - [x] Breakage / loss reporting — manual and photo doors; the product

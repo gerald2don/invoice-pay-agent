@@ -92,9 +92,9 @@ async def extract_photo(request: Request, photo: UploadFile = File(...)):
     if found is None:
         return templates.TemplateResponse(request, "extract.html",
                                           _extract_ctx(photo_error=(
-            "That photo did not match any sample invoice in this demo, so "
-            "nothing was read from it. Download one of the sample invoice "
-            "photos below and upload it — or paste the invoice text instead.")))
+            "That photo could not be read as an invoice, so nothing was "
+            "extracted from it. Try one of the sample invoice photos "
+            "below — or paste the invoice text instead.")))
     result = extraction.extract_invoice(found["raw_text"])
     return templates.TemplateResponse(
         request, "extract.html",

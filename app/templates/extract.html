@@ -29,7 +29,11 @@
 {% if result %}
 <h2>Extraction result{% if result.number %} — Invoice {{ result.number }}{% endif %}</h2>
 {% if photo_match %}
+{% if photo_match.method == "model" %}
+<p class="sub">📷 Read live from the uploaded photo by the vision model ({{ photo_match.model }}), then parsed and matched by the extraction engine — the model's read is the text below.</p>
+{% else %}
 <p class="sub">📷 Read from the uploaded photo — recognized as sample invoice {{ photo_match.fixture_id }} ({{ photo_match.method }} match) and read as the verified text below.</p>
+{% endif %}
 {% endif %}
 <p class="sub">
   {% if supplier_name %}Supplier matched: <strong>{{ supplier_name }}</strong>{% else %}Supplier not recognized from the header — a manager maps it before this can be added.{% endif %}

@@ -25,3 +25,10 @@ services:
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
+      # Gemini vision model at the photo door — set in the Render
+      # dashboard like the PayPal keys; without it the photo door runs
+      # on its sample-photo fallback and the demo still works fully.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash

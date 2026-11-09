@@ -1,15 +1,27 @@
 """Photo -> facts: the vision step of the photo-first pipeline.
 
-Production runs an OCR/vision model here. This demo build is
-fixture-backed behind the same interface, so the whole flow runs with no
-extra keys: data/sample_invoices/<fixture-id>.jpg are the sample photos of
-the ground-truth fixtures in data/extraction_fixtures.json (rendered by
-tools/make_sample_photos.py). An uploaded photo is recognized by content
-hash — exact SHA-256 first, then a perceptual hash so a re-saved or
-lightly resized copy still matches — and read as that fixture's verified
-raw invoice text, the same text app/extraction.py is checked against.
+Two readers sit behind this one interface, in order:
 
-A photo that matches no sample returns None. Nothing is guessed: the
+1. THE MODEL (app/vision_model.py) — when GEMINI_API_KEY is configured,
+   the photo is read live by Google's Gemini vision model, which
+   returns the invoice's structured content; that read is serialized
+   into the pipeline's invoice text and handed to app/extraction.py.
+   The model perceives; every decision after that (item-master
+   matching, confidence, flags, approval, payment) is the project's
+   own layer, unchanged.
+2. THE FIXTURE FALLBACK — with no key configured, or whenever the model
+   read fails, the photo is matched against the demo's sample invoices
+   by content hash, exact SHA-256 first, then a perceptual hash so a
+   re-saved or lightly resized copy still matches:
+   data/sample_invoices/<fixture-id>.jpg are the sample photos of the
+   ground-truth fixtures in data/extraction_fixtures.json (rendered by
+   tools/make_sample_photos.py), read as the fixture's verified raw
+   invoice text, the same text app/extraction.py is checked against.
+
+So the whole flow runs with no extra keys, and the model path can never
+break the hosted demo: worst case it falls back to the samples.
+
+A photo neither reader can read returns None. Nothing is guessed: the
 manager is routed to the paste door with the photo unrecognized.
 
 The same mechanism backs the breakage photo door (/breakage):
@@ -25,7 +37,7 @@ import json
 
 from PIL import Image
 
-from . import data
+from . import data, vision_model
 
 SAMPLE_DIR = data.DATA_DIR / "sample_invoices"
 BREAKAGE_DIR = data.DATA_DIR / "sample_breakage"
@@ -116,12 +128,24 @@ def _match_photo(image_bytes, paths):
 
 
 def read_invoice_photo(image_bytes):
-    """Recognize an invoice photo and return its raw invoice text.
+    """Read an invoice photo and return its raw invoice text.
 
-    Returns {"fixture_id", "raw_text", "method"} where method is "exact"
-    (byte-identical sample photo) or "perceptual" (re-saved copy matched
-    by image hash) — or None when the photo matches no sample invoice.
+    The vision model reads first when it is configured (method "model",
+    with the model name and the model's structured read attached); the
+    fixture hash match is the automatic fallback — and the only path
+    when no model key is set. Fixture reads return method "exact"
+    (byte-identical sample photo) or "perceptual" (re-saved copy
+    matched by image hash). Returns None when neither reader can read
+    the photo.
     """
+    if image_bytes and vision_model.configured():
+        try:
+            read = vision_model.read_invoice(image_bytes)
+            return {"fixture_id": None, "raw_text": read["raw_text"],
+                    "method": "model", "model": read["model"],
+                    "structured": read["structured"]}
+        except vision_model.ModelVisionError:
+            pass  # fall through to the fixture fallback below
     samples = _samples()
     match = _match_photo(image_bytes, [s["path"] for s in samples])
     if match is None:
