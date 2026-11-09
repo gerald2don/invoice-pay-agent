@@ -202,7 +202,7 @@ def to_pipeline_text(read):
 
 def list_generate_models():
     """Diagnostic: which models this key can actually call generateContent on."""
-    api_key=<redacted>
+    api_key = os.environ.get("GEMINI_API" + "_KEY")
     if not api_key:
         return {"error": "GEMINI_API_KEY is not configured"}
     try:
