@@ -85,6 +85,12 @@ def vision_status():
     })
 
 
+@router.get("/vision-probe")
+def vision_probe():
+    """Diagnostic: raw generateContent variant results for this key."""
+    return JSONResponse(vision_model.probe_variants())
+
+
 @router.get("/extract")
 def extract_form(request: Request):
     return templates.TemplateResponse(request, "extract.html", _extract_ctx())

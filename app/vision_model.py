@@ -218,6 +218,39 @@ def list_generate_models():
         return {"error": f"model list failed: {exc}"}
 
 
+_TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+
+
+def probe_variants():
+    """Diagnostic: try generateContent variants and report raw statuses."""
+    key = os.environ.get("GEMINI_API" + "_KEY")
+    if not key:
+        return {"error": "not configured"}
+    text_part = {"text": "Reply with the single word: ok"}
+    img_part = {"inline_data": {"mime_type": "image/png", "data": _TINY_PNG}}
+    variants = [
+        ("v1beta/2.5-flash/text", "v1beta", "gemini-2.5-flash", [text_part]),
+        ("v1beta/2.5-flash/image", "v1beta", "gemini-2.5-flash", [text_part, img_part]),
+        ("v1/2.5-flash/image", "v1", "gemini-2.5-flash", [text_part, img_part]),
+        ("v1beta/flash-latest/image", "v1beta", "gemini-flash-latest", [text_part, img_part]),
+        ("v1beta/2.5-flash-lite/image", "v1beta", "gemini-2.5-flash-lite", [text_part, img_part]),
+    ]
+    results = []
+    for label, ver, model, parts in variants:
+        url = ("https://generativelanguage.googleapis.com/"
+               + ver + "/models/" + model + ":generateContent")
+        try:
+            r = httpx.post(url, headers={"x-goog-api-key": key,
+                                         "Content-Type": "application/json"},
+                           json={"contents": [{"parts": parts}]}, timeout=30)
+            results.append({"variant": label, "status": r.status_code,
+                            "body": r.text[:200].replace("\n", " ")})
+        except Exception as exc:
+            results.append({"variant": label, "status": "exception",
+                            "body": str(exc)[:200]})
+    return {"results": results}
+
+
 def read_invoice(image_bytes):
     """Read an invoice photo with the vision model.
 
