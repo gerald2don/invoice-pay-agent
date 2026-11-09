@@ -224,32 +224,39 @@ _TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwM
 
 
 def probe_variants():
-    """Diagnostic: try generateContent variants and report raw statuses."""
+    """Diagnostic: time generateContent variants for the current-gen models."""
+    import time
     key = os.environ.get("GEMINI_API" + "_KEY")
     if not key:
         return {"error": "not configured"}
     text_part = {"text": "Reply with the single word: ok"}
     img_part = {"inline_data": {"mime_type": "image/png", "data": _TINY_PNG}}
     variants = [
-        ("v1beta/2.5-flash/text", "v1beta", "gemini-2.5-flash", [text_part]),
-        ("v1beta/2.5-flash/image", "v1beta", "gemini-2.5-flash", [text_part, img_part]),
-        ("v1/2.5-flash/image", "v1", "gemini-2.5-flash", [text_part, img_part]),
-        ("v1beta/flash-latest/image", "v1beta", "gemini-flash-latest", [text_part, img_part]),
-        ("v1beta/2.5-flash-lite/image", "v1beta", "gemini-2.5-flash-lite", [text_part, img_part]),
+        ("3.8-flash/text", "gemini-3.8-flash", [text_part], None),
+        ("3.8-flash/image", "gemini-3.8-flash", [text_part, img_part], None),
+        ("3.8-flash/image+json", "gemini-3.8-flash", [text_part, img_part],
+         {"responseMimeType": "application/json"}),
+        ("3.5-flash-lite/image", "gemini-3.5-flash-lite", [text_part, img_part], None),
+        ("3.5-flash/image", "gemini-3.5-flash", [text_part, img_part], None),
     ]
     results = []
-    for label, ver, model, parts in variants:
-        url = ("https://generativelanguage.googleapis.com/"
-               + ver + "/models/" + model + ":generateContent")
+    for label, model, parts, gen_cfg in variants:
+        url = API_ROOT + "/" + model + ":generateContent"
+        payload = {"contents": [{"parts": parts}]}
+        if gen_cfg:
+            payload["generationConfig"] = gen_cfg
+        t0 = time.time()
         try:
             r = httpx.post(url, headers={"x-goog-api-key": key,
                                          "Content-Type": "application/json"},
-                           json={"contents": [{"parts": parts}]}, timeout=30)
+                           json=payload, timeout=120)
             results.append({"variant": label, "status": r.status_code,
-                            "body": r.text[:200].replace("\n", " ")})
+                            "seconds": round(time.time() - t0, 1),
+                            "body": r.text[:160].replace("\n", " ")})
         except Exception as exc:
             results.append({"variant": label, "status": "exception",
-                            "body": str(exc)[:200]})
+                            "seconds": round(time.time() - t0, 1),
+                            "body": str(exc)[:160]})
     return {"results": results}
 
 
