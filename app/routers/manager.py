@@ -2,10 +2,10 @@
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from .. import data, extraction, ledger, paypal_client, variance, vision
+from .. import data, extraction, ledger, paypal_client, variance, vision, vision_model
 
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 router = APIRouter()
@@ -72,6 +72,16 @@ def _result_ctx(result, raw_text, **kw):
         lines.append({"line": line, "item_name": item.get("name", "—")})
     return _extract_ctx(result=result, raw_text=raw_text, lines=lines,
                         supplier_name=supplier.get("name"), **kw)
+
+
+@router.get("/vision-status")
+def vision_status():
+    """Diagnostic: is the vision model configured, and what did it last say?"""
+    return JSONResponse({
+        "configured": vision_model.configured(),
+        "model": vision_model.model_name(),
+        "last_error": vision.last_model_error(),
+    })
 
 
 @router.get("/extract")

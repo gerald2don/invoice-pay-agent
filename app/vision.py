@@ -127,6 +127,14 @@ def _match_photo(image_bytes, paths):
     return None
 
 
+_LAST_MODEL_ERROR = {"msg": None}
+
+
+def last_model_error():
+    """The most recent vision-model failure message, or None."""
+    return _LAST_MODEL_ERROR["msg"]
+
+
 def read_invoice_photo(image_bytes):
     """Read an invoice photo and return its raw invoice text.
 
@@ -141,10 +149,12 @@ def read_invoice_photo(image_bytes):
     if image_bytes and vision_model.configured():
         try:
             read = vision_model.read_invoice(image_bytes)
+            _LAST_MODEL_ERROR["msg"] = None
             return {"fixture_id": None, "raw_text": read["raw_text"],
                     "method": "model", "model": read["model"],
                     "structured": read["structured"]}
-        except vision_model.ModelVisionError:
+        except vision_model.ModelVisionError as exc:
+            _LAST_MODEL_ERROR["msg"] = str(exc)
             pass  # fall through to the fixture fallback below
     samples = _samples()
     match = _match_photo(image_bytes, [s["path"] for s in samples])
