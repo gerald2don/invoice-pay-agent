@@ -53,7 +53,10 @@ Return ONLY a JSON object with this shape:
     {"description": "full product description as printed",
      "quantity": quantity from the quantity column (number),
      "unit_cost": price per that quantity unit, after discounts if a
-                  net price column is printed (number),
+                  net price column is printed (number). If the invoice prints a
+                  discount column and a line TOTAL column, the line TOTAL
+                  is the net amount: report "extended" as that printed
+                  line total and "unit_cost" as extended / quantity,
      "extended": line total as printed (number)}
   ],
   "surcharges": [{"label": "e.g. FUEL SURCHARGE", "amount": number}],
@@ -70,6 +73,9 @@ Rules:
   "surcharges".
 - Credit-memo / vendor-credit lines are NOT product lines: put them in
   "credits".
+- If the invoice prints an invoice total AND an amount due of 0.00
+  (paid at delivery, e.g. COD), printed_total is the invoice total,
+  not the 0.00.
 - If a value is not printed or not legible, use null for it rather
   than guessing."""
 
