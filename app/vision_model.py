@@ -17,9 +17,10 @@ Configuration (environment):
 - GEMINI_API_KEY — enables this path. Without it, configured() is False
   and vision.py stays on its fixture-hash fallback, so the hosted demo
   runs with no extra keys and can never break on a missing key.
-- GEMINI_MODEL — optional; defaults to gemini-3.8-flash.
-  (gemini-2.5-flash is closed to new API users as of Nov 2026;
-  Google's own error message names gemini-3.8-flash as its successor.)
+- GEMINI_MODEL — optional; defaults to gemini-3.5-flash.
+  (Field notes, Nov 2026: gemini-2.5-flash is closed to new API
+  users; gemini-3.8-flash answered a probe with 503 high-demand
+  and 120s timeouts, while gemini-3.5-flash answered in ~2s.)
 
 Any failure here (no key, HTTP error, malformed or incomplete JSON)
 raises ModelVisionError and vision.py falls back to fixture matching.
@@ -34,7 +35,7 @@ import httpx
 from PIL import Image
 
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3.5-flash"
 _TIMEOUT_SECONDS = 60
 _MAX_IMAGE_DIM = 2048  # px — downscale phone photos before upload
 
