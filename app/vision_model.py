@@ -30,13 +30,14 @@ import base64
 import io
 import json
 import os
+import time
 
 import httpx
 from PIL import Image
 
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
 DEFAULT_MODEL = "gemini-3.5-flash"
-_TIMEOUT_SECONDS = 60
+_TIMEOUT_SECONDS = 90
 _MAX_IMAGE_DIM = 2048  # px — downscale phone photos before upload
 
 PROMPT = """You are the perception step of an invoice-processing agent.
@@ -209,62 +210,13 @@ def to_pipeline_text(read):
     return "\n".join(rows)
 
 
-def list_generate_models():
-    """Diagnostic: which models this key can actually call generateContent on."""
-    api_key = os.environ.get("GEMINI_API" + "_KEY")
-    if not api_key:
-        return {"error": "GEMINI_API_KEY is not configured"}
-    try:
-        resp = httpx.get(API_ROOT, params={"pageSize": 200},
-                         headers={"x-goog-api-key": api_key}, timeout=30)
-        resp.raise_for_status()
-        names = []
-        for m in resp.json().get("models", []):
-            if "generateContent" in (m.get("supportedGenerationMethods") or []):
-                names.append((m.get("name") or "").removeprefix("models/"))
-        return {"models": names}
-    except Exception as exc:
-        return {"error": f"model list failed: {exc}"}
-
-
-_TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
-
-
-def probe_variants():
-    """Diagnostic: time generateContent variants for the current-gen models."""
-    import time
-    key = os.environ.get("GEMINI_API" + "_KEY")
-    if not key:
-        return {"error": "not configured"}
-    text_part = {"text": "Reply with the single word: ok"}
-    img_part = {"inline_data": {"mime_type": "image/png", "data": _TINY_PNG}}
-    variants = [
-        ("3.8-flash/text", "gemini-3.8-flash", [text_part], None),
-        ("3.8-flash/image", "gemini-3.8-flash", [text_part, img_part], None),
-        ("3.8-flash/image+json", "gemini-3.8-flash", [text_part, img_part],
-         {"responseMimeType": "application/json"}),
-        ("3.5-flash-lite/image", "gemini-3.5-flash-lite", [text_part, img_part], None),
-        ("3.5-flash/image", "gemini-3.5-flash", [text_part, img_part], None),
-    ]
-    results = []
-    for label, model, parts, gen_cfg in variants:
-        url = API_ROOT + "/" + model + ":generateContent"
-        payload = {"contents": [{"parts": parts}]}
-        if gen_cfg:
-            payload["generationConfig"] = gen_cfg
-        t0 = time.time()
-        try:
-            r = httpx.post(url, headers={"x-goog-api-key": key,
-                                         "Content-Type": "application/json"},
-                           json=payload, timeout=120)
-            results.append({"variant": label, "status": r.status_code,
-                            "seconds": round(time.time() - t0, 1),
-                            "body": r.text[:160].replace("\n", " ")})
-        except Exception as exc:
-            results.append({"variant": label, "status": "exception",
-                            "seconds": round(time.time() - t0, 1),
-                            "body": str(exc)[:160]})
-    return {"results": results}
+def _is_transient(exc):
+    """True for failures a single retry can plausibly outlast."""
+    if isinstance(exc, (httpx.TimeoutException, httpx.TransportError)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in (429, 500, 502, 503, 504)
+    return False
 
 
 def read_invoice(image_bytes):
@@ -272,36 +224,44 @@ def read_invoice(image_bytes):
 
     Returns {"structured": <validated read>, "raw_text": <pipeline
     text>, "model": <model name>}. Raises ModelVisionError on any
-    failure — the caller falls back, never guesses.
+    failure — the caller falls back, never guesses. One automatic
+    retry on transient failures (timeouts, 429/5xx): Google's fleet
+    wobbles, a photographed invoice should not fail for a hiccup.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GEMINI_API" + "_KEY")
     if not api_key:
         raise ModelVisionError("GEMINI_API_KEY is not configured")
     mime, b64 = _prepare_image(image_bytes)
     model = model_name()
-    try:
-        resp = httpx.post(
-            f"{API_ROOT}/{model}:generateContent",
-            headers={"x-goog-api-key": api_key,
-                     "Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [
-                    {"text": PROMPT},
-                    {"inline_data": {"mime_type": mime, "data": b64}},
-                ]}],
-                "generationConfig": {"temperature": 0,
-                                     "responseMimeType": "application/json"},
-            },
-            timeout=_TIMEOUT_SECONDS,
-        )
-        resp.raise_for_status()
-        body = resp.json()
-        text = body["candidates"][0]["content"]["parts"][0]["text"]
-        structured = _validate(json.loads(text))
-    except ModelVisionError:
-        raise
-    except Exception as exc:
-        raise ModelVisionError(f"vision model read failed: {exc}")
+    structured = None
+    for attempt in (1, 2):
+        try:
+            resp = httpx.post(
+                f"{API_ROOT}/{model}:generateContent",
+                headers={"x-goog-api-key": api_key,
+                         "Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [
+                        {"text": PROMPT},
+                        {"inline_data": {"mime_type": mime, "data": b64}},
+                    ]}],
+                    "generationConfig": {"temperature": 0,
+                                         "responseMimeType": "application/json"},
+                },
+                timeout=_TIMEOUT_SECONDS,
+            )
+            resp.raise_for_status()
+            body = resp.json()
+            text = body["candidates"][0]["content"]["parts"][0]["text"]
+            structured = _validate(json.loads(text))
+            break
+        except ModelVisionError:
+            raise
+        except Exception as exc:
+            if attempt == 1 and _is_transient(exc):
+                time.sleep(6)
+                continue
+            raise ModelVisionError(f"vision model read failed: {exc}")
     return {"structured": structured,
             "raw_text": to_pipeline_text(structured),
             "model": model}
